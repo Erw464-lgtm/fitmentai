@@ -362,6 +362,17 @@ function buildMockAnswer(
   const vehicleLabel = vehicleName(vehicle);
   const contextLine = `${vehicleLabel} | current: ${vehicle.current_setup || "not saved"} | suspension: ${vehicle.suspension_setup || "not saved"}`;
 
+  if (
+    lowerQuestion.includes("horsepower") ||
+    lowerQuestion.includes("hp") ||
+    lowerQuestion.includes("turbo") ||
+    lowerQuestion.includes("tune") ||
+    lowerQuestion.includes("power") ||
+    lowerQuestion.includes("performance")
+  ) {
+    return `Performance estimate\n${contextLine}\n\nA turbo upgrade can add meaningful horsepower, but the exact gain depends on the turbo size, tune, fuel, intercooler, downpipe/exhaust flow, and engine health. For a ${vehicleLabel}, I would treat this as a high-impact performance mod that needs supporting parts and professional tuning, not a simple bolt-on estimate.\n\nNext step: compare manufacturer dyno charts for the exact turbo kit, confirm ECU tuning support, and check heat management before buying.`;
+  }
+
   if (lowerQuestion.includes("risk") || lowerQuestion.includes("warning") || lowerQuestion.includes("fit")) {
     if (riskyParts.length === 0 && uncheckedParts.length === 0) {
       return `Garage readout\n${contextLine}\n\nNo unresolved fitment warnings are saved right now. I would still verify exact trim, drivetrain, mounting points, brake clearance, and seller fitment notes before purchase.`;
