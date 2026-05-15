@@ -100,7 +100,7 @@ export function AccountMenu() {
   const displayName = profile?.display_name || profile?.email || "Sign in";
 
   return (
-    <div className="relative">
+    <div className="relative z-[120]">
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
@@ -113,7 +113,7 @@ export function AccountMenu() {
       </button>
 
       {open ? (
-        <div className="absolute right-0 top-12 z-50 w-[calc(100vw-2rem)] max-w-72 rounded-lg border border-line bg-[#07120c] p-3 shadow-glow">
+        <div className="absolute right-0 top-12 z-[999] w-[calc(100vw-2rem)] max-w-72 rounded-lg border border-line bg-[#07120c] p-3 shadow-glow">
           {profile ? (
             <div className="rounded-lg border border-volt/15 bg-volt/5 p-3">
               <div className="flex items-start gap-3">

@@ -60,7 +60,7 @@ export default function Home() {
   return (
     <main className="min-h-screen overflow-hidden bg-ink text-[#f3ead5]">
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_18%_10%,rgba(154,116,40,0.22),transparent_28%),radial-gradient(circle_at_82%_20%,rgba(47,138,85,0.16),transparent_28%),linear-gradient(180deg,#07120c_0%,#0a180f_46%,#061009_100%)]" />
-      <header className="border-b border-line bg-[#07120c]/85 backdrop-blur">
+      <header className="relative z-[100] border-b border-line bg-[#07120c]/85 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 md:px-8">
           <a href="#home" className="flex items-center gap-3">
             <span className="grid h-10 w-10 place-items-center rounded-lg border border-volt/50 bg-[#111f15] text-volt">
