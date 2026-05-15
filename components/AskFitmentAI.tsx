@@ -42,13 +42,24 @@ type PlannedPart = {
 type ChatMessage = {
   role: "user" | "assistant";
   content: string;
+  confidence?: string;
+  followUps?: string[];
 };
+
+type AnswerMode = "fitment-risk" | "power-gains" | "daily-driver" | "next-part" | "budget-plan";
 
 const starterQuestions = [
   "What is the smartest next part to buy?",
   "Which saved parts need a fitment check?",
   "What has the highest fitment risk?",
   "Make this build more daily drivable.",
+];
+const answerModes: Array<{ id: AnswerMode; label: string; prompt: string }> = [
+  { id: "fitment-risk", label: "Fitment risk", prompt: "Check the biggest fitment risks for this build." },
+  { id: "power-gains", label: "Power gains", prompt: "Estimate power gains and supporting mods for this upgrade." },
+  { id: "daily-driver", label: "Daily drivability", prompt: "Make this build more daily drivable." },
+  { id: "next-part", label: "Best next part", prompt: "What is the smartest next part to buy?" },
+  { id: "budget-plan", label: "Budget plan", prompt: "Build a simple staged budget plan for this car." },
 ];
 
 export function AskFitmentAI() {
@@ -68,6 +79,7 @@ export function AskFitmentAI() {
   const [contextLoading, setContextLoading] = useState(true);
   const [aiProvider, setAiProvider] = useState("Checking AI");
   const [aiProviderMessage, setAiProviderMessage] = useState("Checking whether live Gemini is connected.");
+  const [answerMode, setAnswerMode] = useState<AnswerMode>("fitment-risk");
 
   const selectedVehicle = useMemo(
     () => vehicles.find((vehicle) => vehicle.id === selectedVehicleId) ?? vehicles[0],
@@ -158,9 +170,10 @@ export function AskFitmentAI() {
     }
   }
 
-  async function askQuestion(event?: React.FormEvent<HTMLFormElement>, preset?: string) {
+  async function askQuestion(event?: React.FormEvent<HTMLFormElement>, preset?: string, modeOverride?: AnswerMode) {
     event?.preventDefault();
     const nextQuestion = (preset || question).trim();
+    const nextMode = modeOverride || answerMode;
 
     if (!nextQuestion) {
       return;
@@ -177,12 +190,19 @@ export function AskFitmentAI() {
         },
         body: JSON.stringify({
           question: nextQuestion,
+          mode: nextMode,
           profile,
           vehicle: selectedVehicle,
           plannedParts,
         }),
       });
-      const result = (await response.json()) as { answer?: string; provider?: string; error?: string };
+      const result = (await response.json()) as {
+        answer?: string;
+        provider?: string;
+        error?: string;
+        confidence?: string;
+        followUps?: string[];
+      };
       const answer = result.answer || buildMockAnswer(nextQuestion, selectedVehicle, plannedParts, profile);
 
       setAiProvider(result.provider === "gemini" ? "Gemini live" : "Local fallback");
@@ -191,13 +211,16 @@ export function AskFitmentAI() {
           ? "Last answer was generated with live Gemini."
           : "Last answer used the local fallback response."
       );
-      setMessages((current) => [...current, { role: "assistant", content: answer }]);
+      setMessages((current) => [
+        ...current,
+        { role: "assistant", content: answer, confidence: result.confidence, followUps: result.followUps },
+      ]);
       setQuestion("");
     } catch {
       const answer = buildMockAnswer(nextQuestion, selectedVehicle, plannedParts, profile);
       setAiProvider("Local fallback");
       setAiProviderMessage("The API request failed, so this answer used the local fallback response.");
-      setMessages((current) => [...current, { role: "assistant", content: answer }]);
+      setMessages((current) => [...current, { role: "assistant", content: answer, confidence: "Local fallback" }]);
       setQuestion("");
     } finally {
       setLoading(false);
@@ -298,6 +321,29 @@ export function AskFitmentAI() {
             </p>
           </div>
 
+          <div className="mt-4 rounded-lg border border-line bg-[#07120c] p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-volt">Answer mode</p>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {answerModes.map((mode) => (
+                <button
+                  key={mode.id}
+                  type="button"
+                  onClick={() => {
+                    setAnswerMode(mode.id);
+                    setQuestion(mode.prompt);
+                  }}
+                  className={`rounded-lg border px-3 py-2 text-left text-sm font-semibold transition ${
+                    answerMode === mode.id
+                      ? "border-volt bg-volt/15 text-[#f3ead5]"
+                      : "border-line bg-[#09160e] text-[#b8ac91] hover:border-volt hover:text-volt"
+                  }`}
+                >
+                  {mode.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="mt-4 grid gap-2">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-volt">Suggested questions</p>
             {starterQuestions.map((starter) => (
@@ -339,6 +385,29 @@ export function AskFitmentAI() {
                   {message.role === "assistant" ? "FitmentAI" : "You"}
                 </div>
                 <p className="whitespace-pre-line">{message.content}</p>
+                {message.role === "assistant" && (message.confidence || message.followUps?.length) ? (
+                  <div className="mt-4 border-t border-line pt-3">
+                    {message.confidence ? (
+                      <span className="inline-flex rounded-md border border-volt/20 bg-volt/10 px-2 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#d8cba9]">
+                        {message.confidence}
+                      </span>
+                    ) : null}
+                    {message.followUps?.length ? (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {message.followUps.map((followUp) => (
+                          <button
+                            key={followUp}
+                            type="button"
+                            onClick={() => void askQuestion(undefined, followUp)}
+                            className="rounded-md border border-line bg-[#09160e] px-3 py-2 text-left text-xs font-semibold text-[#d8cba9] transition hover:border-volt hover:text-volt"
+                          >
+                            {followUp}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             ))}
           </div>

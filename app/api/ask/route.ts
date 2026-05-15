@@ -3,6 +3,7 @@ import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 
 type AskPayload = {
   question?: string;
+  mode?: "fitment-risk" | "power-gains" | "daily-driver" | "next-part" | "budget-plan";
   profile?: {
     email?: string;
     display_name?: string | null;
@@ -66,6 +67,8 @@ export async function POST(request: Request) {
 
     const body = (await request.json()) as AskPayload;
     const question = body.question?.trim();
+    const confidence = getConfidence(body);
+    const followUps = getFollowUps(body);
 
     if (!question) {
       return NextResponse.json({ error: "Question is required." }, { status: 400 });
@@ -78,6 +81,8 @@ export async function POST(request: Request) {
       return NextResponse.json({
         answer: mockAnswer,
         provider: "mock",
+        confidence,
+        followUps,
         message: "GEMINI_API_KEY is not configured, so Ask FitmentAI used the local MVP response.",
       });
     }
@@ -113,6 +118,8 @@ export async function POST(request: Request) {
       return NextResponse.json({
         answer: mockAnswer,
         provider: "mock",
+        confidence,
+        followUps,
         message: data.error?.message || "Gemini request failed, so Ask FitmentAI used the local MVP response.",
       });
     }
@@ -126,6 +133,8 @@ export async function POST(request: Request) {
     return NextResponse.json({
       answer: answer || mockAnswer,
       provider: answer ? "gemini" : "mock",
+      confidence,
+      followUps,
       message: answer ? "Generated with Gemini." : "Gemini returned no text, so Ask FitmentAI used the local MVP response.",
     });
   } catch {
@@ -144,10 +153,11 @@ function buildPrompt(body: AskPayload) {
     "You are FitmentAI, a concise automotive build planning assistant.",
     "Use the provided garage context to personalize the answer, but you may also use general automotive knowledge for broad build, performance, and planning questions.",
     "Do not invent exact manufacturer fitment claims, part numbers, dyno numbers, or compatibility guarantees. If exact data is missing, give realistic ranges or decision factors and say what the user should verify.",
-    "Give practical enthusiast advice: likely impact, fitment or reliability risk, supporting mods, what to verify before buying, and the next action.",
-    "Keep the answer under 160 words.",
+    "Format every answer exactly with these short labeled sections: Short answer, Why it matters, Risk level, What to verify, Next step.",
+    "Keep the answer under 180 words.",
     "",
     `User question: ${body.question}`,
+    `Answer mode: ${body.mode || "general"}`,
     `Profile: ${body.profile?.display_name || body.profile?.email || "not signed in"}`,
     `Vehicle: ${vehicleLabel}`,
     `Current setup: ${vehicle?.current_setup || "not saved"}`,
@@ -179,6 +189,37 @@ function buildPrompt(body: AskPayload) {
 
 function normalizeGeminiModel(model?: string) {
   return (model || "gemini-2.5-flash-lite").trim().replace(/^models\//, "");
+}
+
+function getConfidence(body: AskPayload) {
+  const parts = body.plannedParts || [];
+
+  if (body.vehicle && parts.some((part) => part.fitment_score !== null && part.fitment_score !== undefined)) {
+    return "High confidence";
+  }
+
+  if (body.vehicle) {
+    return "Medium confidence";
+  }
+
+  return "Low confidence";
+}
+
+function getFollowUps(body: AskPayload) {
+  switch (body.mode) {
+    case "power-gains":
+      return ["What supporting mods do I need?", "What could break first?", "Make this safer for daily driving"];
+    case "daily-driver":
+      return ["What setup is most comfortable?", "What should I avoid?", "Rank my next parts"];
+    case "budget-plan":
+      return ["Build a staged parts list", "What should I buy first?", "What can wait?"];
+    case "fitment-risk":
+      return ["What could rub?", "What specs should I change?", "Find a safer option"];
+    case "next-part":
+      return ["Why that part first?", "What is the risk?", "Save this plan"];
+    default:
+      return ["What supporting mods do I need?", "What could go wrong?", "What should I buy next?"];
+  }
 }
 
 function buildMockAnswer(body: AskPayload) {
