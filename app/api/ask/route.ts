@@ -72,7 +72,7 @@ export async function POST(request: Request) {
       });
     }
 
-    const model = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
+    const model = normalizeGeminiModel(process.env.GEMINI_MODEL);
     const prompt = buildPrompt(body);
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(geminiKey)}`,
@@ -164,6 +164,10 @@ function buildPrompt(body: AskPayload) {
           .join("\n")
       : "- none saved",
   ].join("\n");
+}
+
+function normalizeGeminiModel(model?: string) {
+  return (model || "gemini-2.5-flash-lite").trim().replace(/^models\//, "");
 }
 
 function buildMockAnswer(body: AskPayload) {
