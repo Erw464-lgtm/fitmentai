@@ -66,7 +66,8 @@ export function AskFitmentAI() {
   ]);
   const [loading, setLoading] = useState(false);
   const [contextLoading, setContextLoading] = useState(true);
-  const [aiProvider, setAiProvider] = useState("Local fallback");
+  const [aiProvider, setAiProvider] = useState("Checking AI");
+  const [aiProviderMessage, setAiProviderMessage] = useState("Checking whether live Gemini is connected.");
 
   const selectedVehicle = useMemo(
     () => vehicles.find((vehicle) => vehicle.id === selectedVehicleId) ?? vehicles[0],
@@ -80,6 +81,8 @@ export function AskFitmentAI() {
     : null;
 
   useEffect(() => {
+    void loadAiStatus();
+
     const savedProfile = window.localStorage.getItem("fitmentai-profile");
 
     if (!savedProfile) {
@@ -96,6 +99,23 @@ export function AskFitmentAI() {
       setContextLoading(false);
     }
   }, []);
+
+  async function loadAiStatus() {
+    try {
+      const response = await fetch("/api/ask", { cache: "no-store" });
+      const result = (await response.json()) as { provider?: string; label?: string; model?: string | null };
+
+      setAiProvider(result.provider === "gemini" ? "Gemini live" : result.label || "Local fallback");
+      setAiProviderMessage(
+        result.provider === "gemini"
+          ? `Live Gemini is connected${result.model ? ` using ${result.model}` : ""}.`
+          : "Gemini is not connected, so Ask FitmentAI will use the local fallback."
+      );
+    } catch {
+      setAiProvider("Local fallback");
+      setAiProviderMessage("Could not confirm Gemini status, so the badge will update after your next question.");
+    }
+  }
 
   useEffect(() => {
     if (selectedVehicle?.id) {
@@ -166,11 +186,17 @@ export function AskFitmentAI() {
       const answer = result.answer || buildMockAnswer(nextQuestion, selectedVehicle, plannedParts, profile);
 
       setAiProvider(result.provider === "gemini" ? "Gemini live" : "Local fallback");
+      setAiProviderMessage(
+        result.provider === "gemini"
+          ? "Last answer was generated with live Gemini."
+          : "Last answer used the local fallback response."
+      );
       setMessages((current) => [...current, { role: "assistant", content: answer }]);
       setQuestion("");
     } catch {
       const answer = buildMockAnswer(nextQuestion, selectedVehicle, plannedParts, profile);
       setAiProvider("Local fallback");
+      setAiProviderMessage("The API request failed, so this answer used the local fallback response.");
       setMessages((current) => [...current, { role: "assistant", content: answer }]);
       setQuestion("");
     } finally {
@@ -268,7 +294,7 @@ export function AskFitmentAI() {
               </span>
             </div>
             <p className="mt-2 text-sm leading-6 text-[#b8ac91]">
-              This chat now calls the Ask FitmentAI API route. Add a Gemini API key to use live AI, or leave it blank for the local fallback.
+              {aiProviderMessage}
             </p>
           </div>
 

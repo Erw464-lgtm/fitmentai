@@ -42,6 +42,16 @@ type GeminiResponse = {
   }>;
 };
 
+export function GET() {
+  const geminiConfigured = Boolean(process.env.GEMINI_API_KEY);
+
+  return NextResponse.json({
+    provider: geminiConfigured ? "gemini" : "mock",
+    label: geminiConfigured ? "Gemini live" : "Local fallback",
+    model: geminiConfigured ? normalizeGeminiModel(process.env.GEMINI_MODEL) : null,
+  });
+}
+
 export async function POST(request: Request) {
   try {
     const limit = checkRateLimit({
