@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { Camera, ChevronDown, LogOut, Trash2, UserCircle2 } from "lucide-react";
+import { getAuthHeaders } from "@/lib/clientAuth";
 
 type Profile = {
   id: string;
@@ -15,6 +16,7 @@ type Profile = {
 export function AccountMenu() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [open, setOpen] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -47,10 +49,32 @@ export function AccountMenu() {
     }
 
     try {
-      setProfile(JSON.parse(savedProfile) as Profile);
+      const parsedProfile = JSON.parse(savedProfile) as Profile;
+      setProfile(parsedProfile);
+      void syncStoredAvatar(parsedProfile);
     } catch {
       window.localStorage.removeItem("fitmentai-profile");
       setProfile(null);
+    }
+  }
+
+  async function syncStoredAvatar(currentProfile: Profile) {
+    if (!window.localStorage.getItem("fitmentai-session")) {
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/profile-photo", {
+        cache: "no-store",
+        headers: getAuthHeaders(),
+      });
+      const result = (await response.json()) as { avatarUrl?: string | null };
+
+      if (response.ok && result.avatarUrl && result.avatarUrl !== currentProfile.avatar_url) {
+        updateStoredProfile({ ...currentProfile, avatar_url: result.avatarUrl });
+      }
+    } catch {
+      // Local browser avatar remains usable when storage sync is unavailable.
     }
   }
 
@@ -82,19 +106,46 @@ export function AccountMenu() {
     try {
       const avatarUrl = await compressAvatarImage(file);
       updateStoredProfile({ ...profile, avatar_url: avatarUrl });
+      setUploadingAvatar(true);
+
+      const response = await fetch("/api/profile-photo", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify({ imageData: avatarUrl }),
+      });
+      const result = (await response.json()) as { avatarUrl?: string; profile?: Profile; error?: string };
+
+      if (response.ok && result.avatarUrl) {
+        updateStoredProfile({ ...(result.profile || profile), avatar_url: result.avatarUrl });
+      } else if (response.status !== 401) {
+        alert(result.error || "Photo saved locally, but Supabase Storage could not save it yet.");
+      }
     } catch {
       alert("That image could not be processed. Try a different photo.");
     } finally {
+      setUploadingAvatar(false);
       event.target.value = "";
     }
   }
 
-  function removeAvatar() {
+  async function removeAvatar() {
     if (!profile) {
       return;
     }
 
     updateStoredProfile({ ...profile, avatar_url: null });
+
+    try {
+      await fetch("/api/profile-photo", {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      });
+    } catch {
+      // Local removal still succeeds if the remote sync is unavailable.
+    }
   }
 
   const displayName = profile?.display_name || profile?.email || "Sign in";
@@ -127,7 +178,7 @@ export function AccountMenu() {
               <div className="mt-3 grid gap-2">
                 <label className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-lg border border-line bg-[#09160e] px-3 text-xs font-semibold text-[#d8cba9] transition hover:border-volt hover:text-volt">
                   <Camera className="h-3.5 w-3.5" />
-                  {profile.avatar_url ? "Change photo" : "Upload photo"}
+                  {uploadingAvatar ? "Uploading..." : profile.avatar_url ? "Change photo" : "Upload photo"}
                   <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
                 </label>
                 {profile.avatar_url ? (
