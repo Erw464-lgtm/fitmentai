@@ -68,7 +68,7 @@ export function AccountMenu() {
     window.dispatchEvent(new StorageEvent("storage", { key: "fitmentai-profile" }));
   }
 
-  function handleAvatarUpload(event: React.ChangeEvent<HTMLInputElement>) {
+  async function handleAvatarUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
 
     if (!file || !profile) {
@@ -79,20 +79,14 @@ export function AccountMenu() {
       return;
     }
 
-    if (file.size > 1_500_000) {
-      alert("Choose an image under 1.5MB for this MVP profile photo.");
+    try {
+      const avatarUrl = await compressAvatarImage(file);
+      updateStoredProfile({ ...profile, avatar_url: avatarUrl });
+    } catch {
+      alert("That image could not be processed. Try a different photo.");
+    } finally {
       event.target.value = "";
-      return;
     }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        updateStoredProfile({ ...profile, avatar_url: reader.result });
-      }
-    };
-    reader.readAsDataURL(file);
-    event.target.value = "";
   }
 
   function removeAvatar() {
@@ -188,6 +182,75 @@ export function AccountMenu() {
       ) : null}
     </div>
   );
+}
+
+const maxAvatarBytes = 1_500_000;
+const maxAvatarDimension = 720;
+
+async function compressAvatarImage(file: File) {
+  const sourceUrl = await readFileAsDataUrl(file);
+  const image = await loadImage(sourceUrl);
+  const scale = Math.min(1, maxAvatarDimension / Math.max(image.width, image.height));
+  const width = Math.max(1, Math.round(image.width * scale));
+  const height = Math.max(1, Math.round(image.height * scale));
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+
+  canvas.width = width;
+  canvas.height = height;
+
+  if (!context) {
+    throw new Error("Canvas is not supported.");
+  }
+
+  context.drawImage(image, 0, 0, width, height);
+
+  for (const quality of [0.86, 0.78, 0.68, 0.58, 0.48]) {
+    const dataUrl = canvas.toDataURL("image/jpeg", quality);
+
+    if (estimateDataUrlBytes(dataUrl) <= maxAvatarBytes) {
+      return dataUrl;
+    }
+  }
+
+  const smallerCanvas = document.createElement("canvas");
+  const smallerContext = smallerCanvas.getContext("2d");
+  const smallerScale = Math.min(1, 420 / Math.max(width, height));
+
+  smallerCanvas.width = Math.max(1, Math.round(width * smallerScale));
+  smallerCanvas.height = Math.max(1, Math.round(height * smallerScale));
+
+  if (!smallerContext) {
+    throw new Error("Canvas is not supported.");
+  }
+
+  smallerContext.drawImage(canvas, 0, 0, smallerCanvas.width, smallerCanvas.height);
+
+  return smallerCanvas.toDataURL("image/jpeg", 0.48);
+}
+
+function readFileAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => (typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("Invalid image.")));
+    reader.onerror = () => reject(reader.error || new Error("Image could not be read."));
+    reader.readAsDataURL(file);
+  });
+}
+
+function loadImage(src: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Image could not be loaded."));
+    image.src = src;
+  });
+}
+
+function estimateDataUrlBytes(dataUrl: string) {
+  const base64 = dataUrl.split(",")[1] || "";
+
+  return Math.ceil((base64.length * 3) / 4);
 }
 
 function Avatar({ profile, size }: { profile: Profile | null; size: "sm" | "lg" }) {
