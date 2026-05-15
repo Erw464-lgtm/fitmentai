@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { AccountMenu } from "@/components/AccountMenu";
 import { AskFitmentAI } from "@/components/AskFitmentAI";
+import { ContactForm } from "@/components/ContactForm";
 import { DemoGuide } from "@/components/DemoGuide";
 import { FitmentChecker } from "@/components/FitmentChecker";
 import { GarageManager } from "@/components/GarageManager";
@@ -48,6 +49,12 @@ const waitlistBenefits = [
   "Check fitment before buying",
   "Ask FitmentAI for build advice",
 ];
+const demoSteps = [
+  { title: "Save your car", copy: "Start in My Garage so the app has your exact year, make, model, trim, and setup." },
+  { title: "Find a part", copy: "Search a preview catalog across manufacturer, retailer, and marketplace style listings." },
+  { title: "Run fitment", copy: "Select a listing and score compatibility before buying it." },
+  { title: "Ask FitmentAI", copy: "Use AI to compare risk, supporting mods, and next build steps." },
+];
 
 export default function Home() {
   return (
@@ -72,6 +79,7 @@ export default function Home() {
               <a className="transition hover:text-volt" href="#ask">Ask FitmentAI</a>
               <a className="transition hover:text-volt" href="#how">Roadmap</a>
               <a className="transition hover:text-volt" href="#waitlist">Waitlist</a>
+              <a className="transition hover:text-volt" href="#contact">Contact</a>
             </nav>
             <AccountMenu />
           </div>
@@ -84,6 +92,7 @@ export default function Home() {
             ["Ask AI", "#ask"],
             ["Roadmap", "#how"],
             ["Waitlist", "#waitlist"],
+            ["Contact", "#contact"],
           ].map(([label, href]) => (
             <a
               key={href}
@@ -224,6 +233,33 @@ export default function Home() {
                 ))}
               </div>
             </section>
+
+            <section className="relative mx-auto max-w-7xl px-4 py-12 md:px-8">
+              <div className="absolute inset-x-5 top-0 -z-10 h-[360px] rounded-[40px] bg-[radial-gradient(circle_at_26%_30%,rgba(154,116,40,0.15),transparent_34%),radial-gradient(circle_at_78%_62%,rgba(47,138,85,0.14),transparent_34%)] blur-2xl" />
+              <div className="rounded-lg border border-line bg-panel/95 p-5 shadow-glow md:p-7">
+                <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-volt">How to demo</p>
+                    <h2 className="mt-3 text-3xl font-semibold text-[#f3ead5] md:text-4xl">Show the whole build journey in four clicks.</h2>
+                  </div>
+                  <a
+                    href="#garage"
+                    className="inline-flex h-11 w-fit items-center justify-center rounded-lg border border-volt/30 bg-volt/10 px-4 text-sm font-semibold text-[#d8cba9] transition hover:border-volt hover:text-volt"
+                  >
+                    Start in My Garage
+                  </a>
+                </div>
+                <div className="mt-6 grid gap-3 md:grid-cols-4">
+                  {demoSteps.map((step, index) => (
+                    <a key={step.title} href={index === 0 ? "#garage" : index === 1 || index === 2 ? "#demo" : "#ask"} className="rounded-lg border border-line bg-[#09160e] p-4 transition hover:border-volt hover:bg-volt/5">
+                      <span className="text-xs font-semibold uppercase tracking-[0.16em] text-volt">0{index + 1}</span>
+                      <h3 className="mt-3 font-semibold text-[#f3ead5]">{step.title}</h3>
+                      <p className="mt-2 text-sm leading-6 text-[#b8ac91]">{step.copy}</p>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </section>
           </>
         }
         demo={
@@ -304,6 +340,28 @@ export default function Home() {
             </div>
             <div className="rounded-lg border border-line bg-panel/95 p-5 shadow-glow md:p-7">
               <WaitlistForm />
+            </div>
+          </section>
+        }
+        contact={
+          <section id="contact" className="relative mx-auto grid max-w-7xl gap-8 px-4 py-16 md:px-8 lg:grid-cols-[0.85fr_1.15fr]">
+            <div className="absolute inset-x-5 top-0 -z-10 h-[420px] rounded-[40px] bg-[radial-gradient(circle_at_24%_32%,rgba(47,138,85,0.14),transparent_36%),radial-gradient(circle_at_76%_60%,rgba(154,116,40,0.16),transparent_36%)] blur-2xl" />
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-volt">Contact</p>
+              <h2 className="mt-3 text-3xl font-semibold text-[#f3ead5] md:text-5xl">Tell us what your build needs next.</h2>
+              <p className="mt-5 max-w-xl text-lg leading-8 text-[#b8ac91]">
+                Send feedback, request a feature, or tell FitmentAI what car and parts you want supported first.
+              </p>
+              <div className="mt-6 grid gap-3">
+                {["Best cars to support first", "Part websites to connect", "Fitment checks that matter most"].map((item) => (
+                  <div key={item} className="rounded-lg border border-line bg-panel/80 p-4 text-sm font-semibold text-[#f3ead5]">
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="rounded-lg border border-line bg-panel/95 p-5 shadow-glow md:p-7">
+              <ContactForm />
             </div>
           </section>
         }

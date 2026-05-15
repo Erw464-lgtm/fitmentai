@@ -164,7 +164,7 @@ const trimOptionsByMakeAndModel: Record<string, Record<string, string[]>> = {
     Arteon: ["SE R-Line", "SEL R-Line", "SEL Premium R-Line"],
   },
 };
-const wheelSizeOptions = ["16x7", "17x7.5", "17x8", "18x8", "18x8.5", "18x9", "19x8.5", "19x9", "19x9.5", "20x9", "20x10", "20x11"];
+const wheelSizeOptions = ["16x7", "17x7.5", "17x8", "18x8", "18x8.5", "18x9", "19x8.5", "19x9", "19x9.5", "19x10", "20x9", "20x10", "20x11"];
 const tireSizeOptions = ["215/45R17", "225/40R18", "235/40R18", "245/35R19", "255/35R19", "265/35R19", "275/30R20", "285/30R20", "305/30R20", "315/35R20", "315/45R20"];
 const offsetOptions = ["+55", "+45", "+40", "+35", "+30", "+25", "+20", "+15", "+10", "0", "-5", "-12"];
 const spacerOptions = ["0mm", "3mm", "5mm", "10mm", "15mm", "20mm", "25mm", "30mm"];
@@ -228,6 +228,71 @@ const partTypeOptionsByCategory: Record<PartCategory, string[]> = {
 
 const intakeSteps = ["Vehicle", "Search", "Listing", "Score"];
 const sourceFilters = ["All", "Manufacturer", "ECS Tuning", "FCP Euro", "Turner", "Fitment Industries", "Marketplace"];
+const sampleBuilds: Array<{ label: string; hint: string; form: FitmentRequest }> = [
+  {
+    label: "G80 M3 flush setup",
+    hint: "Wheels + tires",
+    form: {
+      ...initialForm,
+      year: "2024",
+      make: "BMW",
+      model: "M3",
+      trim: "Competition xDrive",
+      partCategory: "wheels",
+      partType: "Forged wheels",
+      specificPart: "Apex VS-5RS forged wheels, 19x10 +22, Michelin Pilot Sport 4S",
+      currentWheelSize: "19x9",
+      newWheelSize: "19x10",
+      tireSize: "275/30R20",
+      offset: "+25",
+      suspensionSetup: "lowering-springs",
+      spacerSize: "0mm",
+      notes: "Wants a flush daily setup with no rubbing on a G80 M3.",
+    },
+  },
+  {
+    label: "GR Supra aero plan",
+    hint: "Exterior",
+    form: {
+      ...initialForm,
+      year: "2022",
+      make: "Toyota",
+      model: "Supra",
+      trim: "3.0 Premium",
+      partCategory: "exterior",
+      partType: "Spoiler / wing",
+      specificPart: "Carbon fiber duckbill spoiler for A90/A91 Supra",
+      currentWheelSize: "19x9",
+      newWheelSize: "19x9.5",
+      tireSize: "255/35R19",
+      offset: "+35",
+      suspensionSetup: "stock",
+      spacerSize: "0mm",
+      notes: "Looking for clean carbon exterior parts that do not require drilling if possible.",
+    },
+  },
+  {
+    label: "Mustang GT track pack",
+    hint: "Brakes + tires",
+    form: {
+      ...initialForm,
+      year: "2024",
+      make: "Ford",
+      model: "Mustang",
+      trim: "GT",
+      partCategory: "brakes",
+      partType: "Big brake kit",
+      specificPart: "Front big brake kit with 6-piston calipers and 15 inch rotors",
+      currentWheelSize: "19x9",
+      newWheelSize: "19x10",
+      tireSize: "285/30R20",
+      offset: "+40",
+      suspensionSetup: "coilovers",
+      spacerSize: "5mm",
+      notes: "Track-focused build needs brake clearance and wheel fitment confidence.",
+    },
+  },
+];
 
 type MockPart = {
   id: string;
@@ -399,6 +464,15 @@ export function FitmentChecker() {
     }));
   }
 
+  function applySampleBuild(sample: FitmentRequest) {
+    setForm(sample);
+    setResult(null);
+    setSelectedPart(null);
+    setError("");
+    setListingMessage("");
+    setSourceFilter("All");
+  }
+
   async function loadGarageVehicles(profileId: string) {
     try {
       const response = await fetch("/api/vehicles", {
@@ -531,6 +605,25 @@ export function FitmentChecker() {
                 {step}
               </div>
             ))}
+          </div>
+          <div className="mt-4 rounded-lg border border-volt/15 bg-volt/5 p-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-volt">Quick sample builds</p>
+              <p className="text-xs text-[#9e9278]">Use one to demo the flow fast.</p>
+            </div>
+            <div className="mt-3 grid gap-2 md:grid-cols-3">
+              {sampleBuilds.map((sample) => (
+                <button
+                  key={sample.label}
+                  type="button"
+                  onClick={() => applySampleBuild(sample.form)}
+                  className="rounded-lg border border-line bg-[#09160e] p-3 text-left transition hover:border-volt hover:bg-[#111f15]"
+                >
+                  <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#9e9278]">{sample.hint}</span>
+                  <span className="mt-1 block text-sm font-semibold text-[#f3ead5]">{sample.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
