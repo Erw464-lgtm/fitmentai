@@ -19,6 +19,7 @@ import { FitmentChecker } from "@/components/FitmentChecker";
 import { GarageManager } from "@/components/GarageManager";
 import { SectionCard } from "@/components/SectionCard";
 import { TabbedPanels } from "@/components/TabbedPanels";
+import { VerifiedSetups } from "@/components/VerifiedSetups";
 import { WaitlistForm } from "@/components/WaitlistForm";
 
 const problems = [
@@ -76,6 +77,7 @@ export default function Home() {
               <a className="transition hover:text-volt" href="#home">Home</a>
               <a className="transition hover:text-volt" href="#demo">Find Parts</a>
               <a className="transition hover:text-volt" href="#garage">My Garage</a>
+              <a className="transition hover:text-volt" href="#verified">Verified</a>
               <a className="transition hover:text-volt" href="#ask">Ask FitmentAI</a>
               <a className="transition hover:text-volt" href="#how">Roadmap</a>
               <a className="transition hover:text-volt" href="#waitlist">Waitlist</a>
@@ -89,6 +91,7 @@ export default function Home() {
             ["Home", "#home"],
             ["Find Parts", "#demo"],
             ["Garage", "#garage"],
+            ["Verified", "#verified"],
             ["Ask AI", "#ask"],
             ["Roadmap", "#how"],
             ["Waitlist", "#waitlist"],
@@ -272,6 +275,7 @@ export default function Home() {
           </>
         }
         garage={<GarageManager />}
+        verified={<VerifiedSetups />}
         ask={<AskFitmentAI />}
         how={
           <>
