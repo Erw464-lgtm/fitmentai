@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Bot, Car, CheckCircle2, Gauge, Loader2, Send, Sparkles, Wrench } from "lucide-react";
+import { AlertTriangle, Bot, Car, CheckCircle2, Gauge, Loader2, Save, Send, Sparkles, Wrench } from "lucide-react";
 import { getAuthHeaders } from "@/lib/clientAuth";
 
 type Profile = {
@@ -42,8 +42,11 @@ type PlannedPart = {
 type ChatMessage = {
   role: "user" | "assistant";
   content: string;
+  question?: string;
+  mode?: AnswerMode;
   confidence?: string;
   followUps?: string[];
+  saved?: boolean;
 };
 
 type AnswerMode = "fitment-risk" | "power-gains" | "daily-driver" | "next-part" | "budget-plan";
@@ -80,6 +83,8 @@ export function AskFitmentAI() {
   const [aiProvider, setAiProvider] = useState("Checking AI");
   const [aiProviderMessage, setAiProviderMessage] = useState("Checking whether live Gemini is connected.");
   const [answerMode, setAnswerMode] = useState<AnswerMode>("fitment-risk");
+  const [savingNoteIndex, setSavingNoteIndex] = useState<number | null>(null);
+  const [noteMessage, setNoteMessage] = useState("");
 
   const selectedVehicle = useMemo(
     () => vehicles.find((vehicle) => vehicle.id === selectedVehicleId) ?? vehicles[0],
@@ -213,17 +218,77 @@ export function AskFitmentAI() {
       );
       setMessages((current) => [
         ...current,
-        { role: "assistant", content: answer, confidence: result.confidence, followUps: result.followUps },
+        {
+          role: "assistant",
+          content: answer,
+          question: nextQuestion,
+          mode: nextMode,
+          confidence: result.confidence,
+          followUps: result.followUps,
+        },
       ]);
       setQuestion("");
     } catch {
       const answer = buildMockAnswer(nextQuestion, selectedVehicle, plannedParts, profile);
       setAiProvider("Local fallback");
       setAiProviderMessage("The API request failed, so this answer used the local fallback response.");
-      setMessages((current) => [...current, { role: "assistant", content: answer, confidence: "Local fallback" }]);
+      setMessages((current) => [
+        ...current,
+        {
+          role: "assistant",
+          content: answer,
+          question: nextQuestion,
+          mode: nextMode,
+          confidence: "Local fallback",
+        },
+      ]);
       setQuestion("");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function saveAiNote(message: ChatMessage, index: number) {
+    if (!profile) {
+      setNoteMessage("Sign in from My Garage before saving AI answers.");
+      return;
+    }
+
+    if (!selectedVehicle || selectedVehicle.id.startsWith("demo-")) {
+      setNoteMessage("Select a saved garage vehicle before saving this AI answer.");
+      return;
+    }
+
+    setSavingNoteIndex(index);
+    setNoteMessage("Saving AI answer to this build...");
+
+    try {
+      const response = await fetch("/api/ai-notes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify({
+          vehicleId: selectedVehicle.id,
+          question: message.question,
+          answer: message.content,
+          mode: message.mode,
+          confidence: message.confidence,
+        }),
+      });
+      const result = (await response.json()) as { message?: string; error?: string };
+
+      if (!response.ok) {
+        throw new Error(result.error || result.message || "AI answer could not be saved.");
+      }
+
+      setMessages((current) => current.map((item, itemIndex) => (itemIndex === index ? { ...item, saved: true } : item)));
+      setNoteMessage(result.message || "AI answer saved to this build.");
+    } catch (error) {
+      setNoteMessage(error instanceof Error ? error.message : "AI answer could not be saved.");
+    } finally {
+      setSavingNoteIndex(null);
     }
   }
 
@@ -385,13 +450,26 @@ export function AskFitmentAI() {
                   {message.role === "assistant" ? "FitmentAI" : "You"}
                 </div>
                 <p className="whitespace-pre-line">{message.content}</p>
-                {message.role === "assistant" && (message.confidence || message.followUps?.length) ? (
+                {message.role === "assistant" && (message.confidence || message.followUps?.length || index > 0) ? (
                   <div className="mt-4 border-t border-line pt-3">
-                    {message.confidence ? (
-                      <span className="inline-flex rounded-md border border-volt/20 bg-volt/10 px-2 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#d8cba9]">
-                        {message.confidence}
-                      </span>
-                    ) : null}
+                    <div className="flex flex-wrap items-center gap-2">
+                      {message.confidence ? (
+                        <span className="inline-flex rounded-md border border-volt/20 bg-volt/10 px-2 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#d8cba9]">
+                          {message.confidence}
+                        </span>
+                      ) : null}
+                      {index > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => void saveAiNote(message, index)}
+                          disabled={savingNoteIndex === index || message.saved}
+                          className="inline-flex items-center gap-2 rounded-md border border-line bg-[#09160e] px-3 py-2 text-xs font-semibold text-[#d8cba9] transition hover:border-volt hover:text-volt disabled:cursor-not-allowed disabled:opacity-70"
+                        >
+                          {message.saved ? <CheckCircle2 className="h-3.5 w-3.5" /> : savingNoteIndex === index ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                          {message.saved ? "Saved to build" : "Save to My Garage"}
+                        </button>
+                      ) : null}
+                    </div>
                     {message.followUps?.length ? (
                       <div className="mt-3 flex flex-wrap gap-2">
                         {message.followUps.map((followUp) => (
@@ -411,6 +489,12 @@ export function AskFitmentAI() {
               </div>
             ))}
           </div>
+
+          {noteMessage ? (
+            <p className="mt-3 rounded-lg border border-volt/25 bg-volt/10 p-3 text-sm text-[#d8cba9]">
+              {noteMessage}
+            </p>
+          ) : null}
 
           <form onSubmit={(event) => void askQuestion(event)} className="mt-5 grid gap-3">
             <textarea

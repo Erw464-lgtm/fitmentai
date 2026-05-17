@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Gauge, Loader2, Plus, Trash2 } from "lucide-react";
+import { CheckCircle2, Gauge, Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
 import { getAuthHeaders } from "@/lib/clientAuth";
 import type { FitmentRequest, FitmentResponse, PartCategory, SuspensionSetup } from "@/lib/fitmentScore";
 
@@ -71,6 +71,18 @@ type PlannedPartForm = {
   source: string;
   price: string;
   notes: string;
+};
+
+type AiNote = {
+  id: string;
+  user_id: string;
+  vehicle_id: string | null;
+  title: string;
+  question: string | null;
+  answer: string;
+  mode: string | null;
+  confidence: string | null;
+  created_at: string;
 };
 
 const initialForm: VehicleForm = {
@@ -169,10 +181,12 @@ export function GarageManager() {
   const [profileForm, setProfileForm] = useState<ProfileForm>(initialProfileForm);
   const [vehicles, setVehicles] = useState<GarageVehicle[]>([]);
   const [plannedParts, setPlannedParts] = useState<PlannedPart[]>([]);
+  const [aiNotes, setAiNotes] = useState<AiNote[]>([]);
   const [form, setForm] = useState<VehicleForm>(initialForm);
   const [partForm, setPartForm] = useState<PlannedPartForm>(initialPartForm);
   const [loading, setLoading] = useState(true);
   const [partsLoading, setPartsLoading] = useState(false);
+  const [aiNotesLoading, setAiNotesLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savingPart, setSavingPart] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
@@ -180,6 +194,7 @@ export function GarageManager() {
   const [checkingPartId, setCheckingPartId] = useState("");
   const [message, setMessage] = useState("");
   const [partsMessage, setPartsMessage] = useState("");
+  const [aiNotesMessage, setAiNotesMessage] = useState("");
   const [selectedId, setSelectedId] = useState<string>("");
 
   const selectedVehicle = useMemo(
@@ -190,8 +205,10 @@ export function GarageManager() {
   useEffect(() => {
     if (selectedVehicle?.id && !selectedVehicle.id.startsWith("demo-")) {
       void loadPlannedParts(selectedVehicle.id);
+      void loadAiNotes(selectedVehicle.id);
     } else {
       setPlannedParts([]);
+      setAiNotes([]);
     }
   }, [selectedVehicle?.id]);
 
@@ -460,6 +477,34 @@ export function GarageManager() {
     }
   }
 
+  async function loadAiNotes(vehicleId: string) {
+    setAiNotesLoading(true);
+    setAiNotesMessage("");
+
+    try {
+      const response = await fetchWithTimeout(`/api/ai-notes?vehicleId=${encodeURIComponent(vehicleId)}`, {
+        cache: "no-store",
+        headers: getAuthHeaders(),
+      }, 6500);
+      const result = (await response.json()) as {
+        aiNotes?: AiNote[];
+        message?: string;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(result.error || result.message || "AI notes could not be loaded.");
+      }
+
+      setAiNotes(result.aiNotes ?? []);
+    } catch (error) {
+      setAiNotes([]);
+      setAiNotesMessage(error instanceof Error ? error.message : "AI notes could not be loaded.");
+    } finally {
+      setAiNotesLoading(false);
+    }
+  }
+
   async function savePlannedPart(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -575,6 +620,29 @@ export function GarageManager() {
         setPlannedParts((current) => [deletedPart, ...current]);
       }
       setPartsMessage(error instanceof Error ? error.message : "Planned part could not be deleted.");
+    }
+  }
+
+  async function deleteAiNote(id: string) {
+    const deletedNote = aiNotes.find((note) => note.id === id);
+    setAiNotes((current) => current.filter((note) => note.id !== id));
+    setAiNotesMessage("");
+
+    try {
+      const response = await fetch(`/api/ai-notes?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      });
+      const result = (await response.json()) as { error?: string; message?: string };
+
+      if (!response.ok) {
+        throw new Error(result.error || result.message || "AI note could not be deleted.");
+      }
+    } catch (error) {
+      if (deletedNote) {
+        setAiNotes((current) => [deletedNote, ...current]);
+      }
+      setAiNotesMessage(error instanceof Error ? error.message : "AI note could not be deleted.");
     }
   }
 
@@ -840,6 +908,71 @@ export function GarageManager() {
               <Detail label="Suspension" value={selectedVehicle.suspension_setup} />
               <Detail label="Dream setup" value={selectedVehicle.dream_setup} />
               <Detail label="Parts to buy" value={selectedVehicle.parts_to_buy} />
+            </div>
+
+            <div className="mt-4 rounded-lg border border-line bg-[#07120c] p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-volt">Saved AI notes</p>
+                  <h4 className="mt-2 text-lg font-semibold text-[#f3ead5]">
+                    {aiNotesLoading ? "Loading AI answers..." : `${aiNotes.length} saved answer${aiNotes.length === 1 ? "" : "s"}`}
+                  </h4>
+                  <p className="mt-1 text-sm leading-6 text-[#9e9278]">
+                    Ask FitmentAI can now save advice, risk checks, and build plans directly to this vehicle.
+                  </p>
+                </div>
+                <a
+                  href="#ask"
+                  className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-volt/30 bg-volt/10 px-4 text-sm font-semibold text-[#d8cba9] transition hover:border-volt hover:text-volt"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Ask AI
+                </a>
+              </div>
+
+              {aiNotesMessage ? (
+                <p className="mt-3 rounded-lg border border-volt/25 bg-volt/10 p-3 text-sm text-[#d8cba9]">
+                  {aiNotesMessage}
+                </p>
+              ) : null}
+
+              <div className="mt-4 grid gap-3">
+                {aiNotes.map((note) => (
+                  <div key={note.id} className="rounded-lg border border-line bg-[#09160e] p-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-semibold text-[#f3ead5]">{note.title}</p>
+                          {note.confidence ? (
+                            <span className="rounded-md border border-volt/20 bg-volt/10 px-2 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#d8cba9]">
+                              {note.confidence}
+                            </span>
+                          ) : null}
+                        </div>
+                        {note.question ? (
+                          <p className="mt-2 text-xs leading-5 text-[#9e9278]">Question: {note.question}</p>
+                        ) : null}
+                        <p className="mt-3 line-clamp-5 whitespace-pre-line text-sm leading-6 text-[#b8ac91]">
+                          {note.answer}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => void deleteAiNote(note.id)}
+                        className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-line px-3 text-xs font-semibold text-[#d8cba9] transition hover:border-warning hover:text-orange-200"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {!aiNotesLoading && aiNotes.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-line bg-[#09160e] p-4 text-sm leading-6 text-[#9e9278]">
+                    No AI notes saved for this car yet. Go to Ask FitmentAI, ask about this build, then hit Save to My Garage.
+                  </div>
+                ) : null}
+              </div>
             </div>
 
             <div className="mt-4 rounded-lg border border-volt/15 bg-volt/5 p-4">
