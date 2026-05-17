@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, ExternalLink, Gauge, Loader2, Plus, Search, Sparkles, Trash2 } from "lucide-react";
+import { CheckCircle2, ClipboardCopy, ExternalLink, Gauge, Loader2, Plus, Search, Share2, Sparkles, Trash2 } from "lucide-react";
 import { getAuthHeaders } from "@/lib/clientAuth";
 import type { FitmentRequest, FitmentResponse, PartCategory, SuspensionSetup } from "@/lib/fitmentScore";
 
@@ -230,6 +230,7 @@ export function GarageManager() {
   const [sourceSearchProvider, setSourceSearchProvider] = useState("");
   const [liveSourceCandidates, setLiveSourceCandidates] = useState<SourceCandidate[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
+  const [shareMessage, setShareMessage] = useState("");
 
   const selectedVehicle = useMemo(
     () => vehicles.find((vehicle) => vehicle.id === selectedId) ?? vehicles[0],
@@ -248,6 +249,12 @@ export function GarageManager() {
 
   const installedCount = plannedParts.filter((part) => part.status === "installed").length;
   const buildProgress = plannedParts.length ? Math.round((installedCount / plannedParts.length) * 100) : 0;
+  const checkedCount = plannedParts.filter((part) => part.fitment_score !== null).length;
+  const uncheckedCount = plannedParts.length - checkedCount;
+  const riskCount = plannedParts.filter((part) => (part.fitment_score ?? 100) < 70 || Boolean(part.fitment_warning)).length;
+  const averageFitmentScore = checkedCount
+    ? Math.round(plannedParts.reduce((total, part) => total + (part.fitment_score || 0), 0) / checkedCount)
+    : null;
   const sourceCandidates = useMemo(
     () => buildSourceCandidates(partForm, selectedVehicle),
     [partForm, selectedVehicle]
@@ -889,6 +896,27 @@ export function GarageManager() {
     }
   }
 
+  async function copyBuildShare() {
+    if (!selectedVehicle) {
+      setShareMessage("Select a vehicle before creating a shareable.");
+      return;
+    }
+
+    const shareText = buildShareText(selectedVehicle, plannedParts, {
+      buildProgress,
+      averageFitmentScore,
+      checkedCount,
+      riskCount,
+    });
+
+    try {
+      await navigator.clipboard.writeText(shareText);
+      setShareMessage("Shareable build summary copied.");
+    } catch {
+      setShareMessage("Clipboard blocked. Use the share preview text below.");
+    }
+  }
+
   return (
     <section id="garage" className="relative mx-auto grid max-w-7xl gap-6 px-4 py-12 md:px-8 lg:grid-cols-[0.88fr_1.12fr]">
       <div className="absolute inset-x-5 top-0 -z-10 h-[520px] rounded-[40px] bg-[radial-gradient(circle_at_24%_35%,rgba(154,116,40,0.17),transparent_36%),radial-gradient(circle_at_78%_50%,rgba(47,138,85,0.16),transparent_36%)] blur-2xl" />
@@ -1012,7 +1040,7 @@ export function GarageManager() {
       <div className="rounded-lg border border-line bg-panel/95 p-4 shadow-glow">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-volt">Saved vehicles</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-volt">Garage dashboard</p>
             <h3 className="mt-2 text-xl font-semibold text-[#f3ead5]">
               {loading ? "Loading garage..." : `${vehicles.length} garage vehicle${vehicles.length === 1 ? "" : "s"}`}
             </h3>
@@ -1024,6 +1052,17 @@ export function GarageManager() {
           >
             Refresh
           </button>
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <DashboardMetric label="Build progress" value={`${buildProgress}%`} accent="gold" />
+          <DashboardMetric label="Avg fitment" value={averageFitmentScore === null ? "N/A" : `${averageFitmentScore}/100`} accent="green" />
+          <DashboardMetric label="Unchecked parts" value={`${uncheckedCount}`} accent={uncheckedCount ? "gold" : "green"} />
+          <DashboardMetric label="Risk flags" value={`${riskCount}`} accent={riskCount ? "warning" : "green"} />
+        </div>
+
+        <div className="mt-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-volt">Saved vehicles</p>
         </div>
 
         <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -1059,20 +1098,62 @@ export function GarageManager() {
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-volt">Selected vehicle</p>
                 <h3 className="mt-2 text-xl font-semibold text-[#f3ead5]">{vehicleName(selectedVehicle)}</h3>
               </div>
-              <button
-                type="button"
-                onClick={() => void deleteVehicle(selectedVehicle.id)}
-                className="inline-flex h-10 items-center gap-2 rounded-lg border border-line px-3 text-sm font-semibold text-[#d8cba9] transition hover:border-warning hover:text-orange-200"
-              >
-                <Trash2 className="h-4 w-4" />
-                Delete
-              </button>
+              <div className="flex flex-wrap justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => void copyBuildShare()}
+                  className="inline-flex h-10 items-center gap-2 rounded-lg border border-volt/30 bg-volt/10 px-3 text-sm font-semibold text-[#d8cba9] transition hover:border-volt hover:text-volt"
+                >
+                  <Share2 className="h-4 w-4" />
+                  Share
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void deleteVehicle(selectedVehicle.id)}
+                  className="inline-flex h-10 items-center gap-2 rounded-lg border border-line px-3 text-sm font-semibold text-[#d8cba9] transition hover:border-warning hover:text-orange-200"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete
+                </button>
+              </div>
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <Detail label="Current setup" value={selectedVehicle.current_setup} />
               <Detail label="Suspension" value={selectedVehicle.suspension_setup} />
               <Detail label="Dream setup" value={selectedVehicle.dream_setup} />
               <Detail label="Parts to buy" value={selectedVehicle.parts_to_buy} />
+            </div>
+
+            <div className="mt-4 rounded-lg border border-volt/20 bg-[linear-gradient(135deg,rgba(154,116,40,0.12),rgba(47,138,85,0.08))] p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-volt">Shareable build card</p>
+                  <h4 className="mt-2 text-lg font-semibold text-[#f3ead5]">
+                    {vehicleName(selectedVehicle)} build snapshot
+                  </h4>
+                  <p className="mt-2 text-sm leading-6 text-[#b8ac91]">
+                    Copy a clean summary for a shop, seller, friend, forum post, or early-access demo.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void copyBuildShare()}
+                  className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-volt px-4 text-sm font-semibold text-[#07120c] transition hover:bg-[#b98d31]"
+                >
+                  <ClipboardCopy className="h-4 w-4" />
+                  Copy share text
+                </button>
+              </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                <MiniShareStat label="Progress" value={`${buildProgress}%`} />
+                <MiniShareStat label="Fitment" value={averageFitmentScore === null ? "Not checked" : `${averageFitmentScore}/100 avg`} />
+                <MiniShareStat label="Parts" value={`${plannedParts.length} saved`} />
+              </div>
+              {shareMessage ? (
+                <p className="mt-3 rounded-lg border border-volt/25 bg-volt/10 p-3 text-sm text-[#d8cba9]">
+                  {shareMessage}
+                </p>
+              ) : null}
             </div>
 
             <div className="mt-4 rounded-lg border border-line bg-[#07120c] p-4">
@@ -1671,6 +1752,79 @@ function extractOffset(text: string) {
 
 function extractSpacer(text: string) {
   return text.match(/\b\d{1,2}mm\b/i)?.[0] ?? "";
+}
+
+function buildShareText(
+  vehicle: GarageVehicle,
+  plannedParts: PlannedPart[],
+  stats: {
+    buildProgress: number;
+    averageFitmentScore: number | null;
+    checkedCount: number;
+    riskCount: number;
+  }
+) {
+  const topParts = plannedParts
+    .slice(0, 5)
+    .map((part) => {
+      const score = part.fitment_score !== null ? ` - ${part.fitment_score}/100` : " - unchecked";
+      const status = part.status === "installed" ? "installed" : "planned";
+      return `- ${part.name} (${part.category}, ${status}${score})`;
+    })
+    .join("\n");
+
+  return [
+    `FitmentAI build: ${vehicleName(vehicle)}`,
+    `Nickname: ${vehicle.nickname || "Saved build"}`,
+    `Current setup: ${vehicle.current_setup || "Not saved"}`,
+    `Suspension: ${vehicle.suspension_setup || "Not saved"}`,
+    `Dream setup: ${vehicle.dream_setup || "Not saved"}`,
+    `Parts to buy: ${vehicle.parts_to_buy || "Not saved"}`,
+    "",
+    `Build progress: ${stats.buildProgress}%`,
+    `Average fitment score: ${stats.averageFitmentScore === null ? "Not checked yet" : `${stats.averageFitmentScore}/100`}`,
+    `Checked parts: ${stats.checkedCount}`,
+    `Risk flags: ${stats.riskCount}`,
+    "",
+    "Saved parts:",
+    topParts || "- No saved parts yet",
+    "",
+    "Built with FitmentAI: https://fitmentai.vercel.app",
+  ].join("\n");
+}
+
+function DashboardMetric({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: string;
+  accent: "gold" | "green" | "warning";
+}) {
+  const accentClass =
+    accent === "green"
+      ? "border-signal/25 bg-signal/10 text-signal"
+      : accent === "warning"
+        ? "border-warning/35 bg-warning/10 text-orange-200"
+        : "border-volt/25 bg-volt/10 text-volt";
+
+  return (
+    <div className="rounded-lg border border-line bg-[#07120c] p-4">
+      <div className={`mb-3 h-1.5 w-12 rounded-full ${accentClass}`} />
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#9e9278]">{label}</p>
+      <p className="mt-2 text-2xl font-semibold text-[#f3ead5]">{value}</p>
+    </div>
+  );
+}
+
+function MiniShareStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-line bg-[#07120c] p-3">
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-volt">{label}</p>
+      <p className="mt-2 text-sm font-semibold text-[#f3ead5]">{value}</p>
+    </div>
+  );
 }
 
 function Detail({ label, value }: { label: string; value: string | null }) {

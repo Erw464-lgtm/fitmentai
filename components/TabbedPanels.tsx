@@ -2,7 +2,7 @@
 
 import { ReactNode, useEffect, useMemo, useState } from "react";
 
-type TabId = "home" | "demo" | "garage" | "verified" | "ask" | "how" | "waitlist" | "contact";
+type TabId = "home" | "demo" | "garage" | "verified" | "ask" | "how" | "waitlist" | "admin" | "contact";
 
 type TabbedPanelsProps = {
   home: ReactNode;
@@ -12,12 +12,13 @@ type TabbedPanelsProps = {
   ask: ReactNode;
   how: ReactNode;
   waitlist: ReactNode;
+  admin: ReactNode;
   contact: ReactNode;
 };
 
-const validTabs = new Set<TabId>(["home", "demo", "garage", "verified", "ask", "how", "waitlist", "contact"]);
+const validTabs = new Set<TabId>(["home", "demo", "garage", "verified", "ask", "how", "waitlist", "admin", "contact"]);
 
-export function TabbedPanels({ home, demo, garage, verified, ask, how, waitlist, contact }: TabbedPanelsProps) {
+export function TabbedPanels({ home, demo, garage, verified, ask, how, waitlist, admin, contact }: TabbedPanelsProps) {
   const [activeTab, setActiveTab] = useState<TabId>("home");
   const panels = useMemo(
     () => ({
@@ -28,9 +29,10 @@ export function TabbedPanels({ home, demo, garage, verified, ask, how, waitlist,
       ask,
       how,
       waitlist,
+      admin,
       contact,
     }),
-    [ask, contact, demo, garage, home, how, verified, waitlist]
+    [admin, ask, contact, demo, garage, home, how, verified, waitlist]
   );
 
   useEffect(() => {

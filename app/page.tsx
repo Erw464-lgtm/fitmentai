@@ -12,6 +12,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { AccountMenu } from "@/components/AccountMenu";
+import { AdminDashboard } from "@/components/AdminDashboard";
 import { AskFitmentAI } from "@/components/AskFitmentAI";
 import { ContactForm } from "@/components/ContactForm";
 import { DemoGuide } from "@/components/DemoGuide";
@@ -81,6 +82,7 @@ export default function Home() {
               <a className="transition hover:text-volt" href="#ask">Ask FitmentAI</a>
               <a className="transition hover:text-volt" href="#how">Roadmap</a>
               <a className="transition hover:text-volt" href="#waitlist">Waitlist</a>
+              <a className="transition hover:text-volt" href="#admin">Admin</a>
               <a className="transition hover:text-volt" href="#contact">Contact</a>
             </nav>
             <AccountMenu />
@@ -95,6 +97,7 @@ export default function Home() {
             ["Ask AI", "#ask"],
             ["Roadmap", "#how"],
             ["Waitlist", "#waitlist"],
+            ["Admin", "#admin"],
             ["Contact", "#contact"],
           ].map(([label, href]) => (
             <a
@@ -347,6 +350,7 @@ export default function Home() {
             </div>
           </section>
         }
+        admin={<AdminDashboard />}
         contact={
           <section id="contact" className="relative mx-auto grid max-w-7xl gap-8 px-4 py-16 md:px-8 lg:grid-cols-[0.85fr_1.15fr]">
             <div className="absolute inset-x-5 top-0 -z-10 h-[420px] rounded-[40px] bg-[radial-gradient(circle_at_24%_32%,rgba(47,138,85,0.14),transparent_36%),radial-gradient(circle_at_76%_60%,rgba(154,116,40,0.16),transparent_36%)] blur-2xl" />

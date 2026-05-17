@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSupabaseStatus, insertSupabaseRow } from "@/lib/supabaseRest";
+import { getSupabaseStatus, insertSupabaseRow, selectSupabaseRows } from "@/lib/supabaseRest";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 
 type WaitlistPayload = {
@@ -68,11 +68,42 @@ export async function POST(request: Request) {
   }
 }
 
-export function GET() {
-  return NextResponse.json(
-    { error: "Use POST to submit a private beta waitlist signup." },
-    { status: 405 }
-  );
+export async function GET(request: Request) {
+  const adminPin = process.env.ADMIN_DASHBOARD_PIN;
+  const requestPin = request.headers.get("x-admin-pin")?.trim();
+
+  if (!adminPin) {
+    return NextResponse.json(
+      {
+        error: "Admin dashboard PIN is not configured. Add ADMIN_DASHBOARD_PIN in Vercel environment variables.",
+        waitlist: [],
+      },
+      { status: 503 }
+    );
+  }
+
+  if (!requestPin || requestPin !== adminPin) {
+    return NextResponse.json({ error: "Admin PIN required." }, { status: 401 });
+  }
+
+  const result = await selectSupabaseRows({
+    table: "waitlist",
+    query: "select=id,name,email,role,needed_feature,note,source,created_at&order=created_at.desc&limit=250",
+  });
+
+  if (!result.ok) {
+    return NextResponse.json(
+      {
+        error: result.error || "Waitlist could not be loaded.",
+        waitlist: [],
+      },
+      { status: result.status || 500 }
+    );
+  }
+
+  return NextResponse.json({
+    waitlist: Array.isArray(result.data) ? result.data : [],
+  });
 }
 
 function validateWaitlistPayload(body: WaitlistPayload) {
