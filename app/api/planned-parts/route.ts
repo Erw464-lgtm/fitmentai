@@ -14,12 +14,15 @@ type PlannedPartPayload = {
   name?: string;
   category?: string;
   source?: string;
+  sourceUrl?: string;
+  sourceType?: string;
   price?: string;
+  fitmentClaim?: string;
   notes?: string;
 };
 
 const partSelect =
-  "select=id,vehicle_id,name,category,source,price,status,fitment_score,fitment_status,fitment_warning,fitment_recommendation,fitment_checked_at,notes,created_at&order=created_at.desc";
+  "select=id,vehicle_id,name,category,source,source_url,source_type,price,fitment_claim,status,fitment_score,fitment_status,fitment_warning,fitment_recommendation,fitment_checked_at,notes,created_at&order=created_at.desc";
 const legacyPartSelect =
   "select=id,vehicle_id,name,category,source,price,status,notes,created_at&order=created_at.desc";
 
@@ -48,7 +51,7 @@ export async function GET(request: Request) {
     query: `${partSelect}&vehicle_id=eq.${encodeURIComponent(vehicleId)}`,
   });
 
-  if (!result.ok && result.error?.includes("fitment_")) {
+  if (!result.ok && (result.error?.includes("fitment_") || result.error?.includes("source_") || result.error?.includes("fitment_claim"))) {
     result = await selectSupabaseRows({
       table: "planned_parts",
       query: `${legacyPartSelect}&vehicle_id=eq.${encodeURIComponent(vehicleId)}`,
@@ -117,18 +120,31 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Vehicle was not found for this account." }, { status: 404 });
     }
 
-    const result = await insertSupabaseRow({
+    const values = {
+      vehicle_id: body.vehicleId,
+      name: body.name?.trim(),
+      category: body.category?.trim() || "Performance",
+      source: body.source?.trim() || null,
+      source_url: normalizeUrl(body.sourceUrl),
+      source_type: normalizeSourceType(body.sourceType),
+      price: body.price?.trim() || null,
+      fitment_claim: body.fitmentClaim?.trim() || null,
+      status: "planned",
+      notes: body.notes?.trim() || null,
+    };
+
+    let result = await insertSupabaseRow({
       table: "planned_parts",
-      values: {
-        vehicle_id: body.vehicleId,
-        name: body.name?.trim(),
-        category: body.category?.trim() || "Performance",
-        source: body.source?.trim() || null,
-        price: body.price?.trim() || null,
-        status: "planned",
-        notes: body.notes?.trim() || null,
-      },
+      values,
     });
+
+    if (!result.ok && (result.error?.includes("source_url") || result.error?.includes("source_type") || result.error?.includes("fitment_claim"))) {
+      const { source_url: _sourceUrl, source_type: _sourceType, fitment_claim: _fitmentClaim, ...legacyValues } = values;
+      result = await insertSupabaseRow({
+        table: "planned_parts",
+        values: legacyValues,
+      });
+    }
 
     if (!result.ok) {
       return NextResponse.json(
@@ -149,6 +165,30 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
   }
+}
+
+function normalizeUrl(url: string | undefined) {
+  const trimmed = url?.trim();
+
+  if (!trimmed) {
+    return null;
+  }
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+
+  return `https://${trimmed}`;
+}
+
+function normalizeSourceType(type: string | undefined) {
+  const trimmed = type?.trim();
+
+  if (!trimmed) {
+    return "Retailer";
+  }
+
+  return ["Manufacturer", "Retailer", "Marketplace", "Shop", "Forum"].includes(trimmed) ? trimmed : "Retailer";
 }
 
 export async function PATCH(request: Request) {

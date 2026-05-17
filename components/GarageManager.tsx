@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Gauge, Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
+import { CheckCircle2, ExternalLink, Gauge, Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
 import { getAuthHeaders } from "@/lib/clientAuth";
 import type { FitmentRequest, FitmentResponse, PartCategory, SuspensionSetup } from "@/lib/fitmentScore";
 
@@ -54,7 +54,10 @@ type PlannedPart = {
   name: string;
   category: string;
   source: string | null;
+  source_url?: string | null;
+  source_type?: string | null;
   price: string | null;
+  fitment_claim?: string | null;
   status: "planned" | "installed";
   fitment_score: number | null;
   fitment_status: string | null;
@@ -69,7 +72,10 @@ type PlannedPartForm = {
   name: string;
   category: string;
   source: string;
+  sourceUrl: string;
+  sourceType: string;
   price: string;
+  fitmentClaim: string;
   notes: string;
 };
 
@@ -119,16 +125,22 @@ const initialProfileForm: ProfileForm = {
 const initialPartForm: PlannedPartForm = {
   name: "Air intake",
   category: "Performance",
-  source: "Manufacturer site",
+  source: "Eventuri",
+  sourceUrl: "https://www.eventuri.net",
+  sourceType: "Manufacturer",
   price: "$350-$500",
-  notes: "Check engine, trim, and emissions fitment before buying.",
+  fitmentClaim: "Seller claims trim-specific fitment with included heat shield.",
+  notes: "Check engine, trim, emissions, and install hardware before buying.",
 };
 
 const demoPartForm: PlannedPartForm = {
   name: "Carbon rear spoiler",
   category: "Exterior",
-  source: "Manufacturer site",
+  source: "RW Carbon",
+  sourceUrl: "https://www.rwcarbon.com",
+  sourceType: "Retailer",
   price: "$450-$700",
+  fitmentClaim: "Listing claims Porsche Macan hatch compatibility.",
   notes: "Verify hatch shape, mounting points, and Turbo trim compatibility before buying.",
 };
 
@@ -142,6 +154,8 @@ const partCategories = [
   "Performance",
   "Interior",
 ];
+
+const sourceTypes = ["Manufacturer", "Retailer", "Marketplace", "Shop", "Forum"];
 
 const fallbackVehicles: GarageVehicle[] = [
   {
@@ -522,7 +536,10 @@ export function GarageManager() {
       name: partForm.name.trim(),
       category: partForm.category.trim() || "Performance",
       source: partForm.source.trim() || null,
+      source_url: normalizePartUrl(partForm.sourceUrl),
+      source_type: partForm.sourceType.trim() || "Retailer",
       price: partForm.price.trim() || null,
+      fitment_claim: partForm.fitmentClaim.trim() || null,
       status: "planned",
       fitment_score: null,
       fitment_status: null,
@@ -995,7 +1012,7 @@ export function GarageManager() {
 
               <div className="mt-4 flex flex-col gap-3 rounded-lg border border-line bg-[#07120c] p-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm leading-6 text-[#b8ac91]">
-                  Save a part from any manufacturer or parts site, then run a check to attach fitment risk to it.
+                  Save a part from any manufacturer, retailer, shop, marketplace, or forum, then run a check to attach fitment risk to it.
                 </p>
                 <button
                   type="button"
@@ -1023,9 +1040,25 @@ export function GarageManager() {
                       ))}
                     </select>
                   </label>
-                  <Input label="Source / website" value={partForm.source} onChange={(value) => updatePartForm("source", value)} />
+                  <Input label="Source name" value={partForm.source} onChange={(value) => updatePartForm("source", value)} />
+                  <label className="grid gap-2 text-sm font-medium text-[#b8ac91]">
+                    Source type
+                    <select
+                      value={partForm.sourceType}
+                      onChange={(event) => updatePartForm("sourceType", event.target.value)}
+                      className="h-11 rounded-lg border border-line bg-[#09160e] px-3 text-[#f3ead5] outline-none ring-volt/20 transition focus:border-volt focus:ring-4"
+                    >
+                      {sourceTypes.map((sourceType) => (
+                        <option key={sourceType} value={sourceType}>
+                          {sourceType}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <Input label="Source URL" value={partForm.sourceUrl} onChange={(value) => updatePartForm("sourceUrl", value)} />
                   <Input label="Price" value={partForm.price} onChange={(value) => updatePartForm("price", value)} />
                 </div>
+                <TextArea label="Fitment claim from listing" value={partForm.fitmentClaim} onChange={(value) => updatePartForm("fitmentClaim", value)} />
                 <TextArea label="Notes" value={partForm.notes} onChange={(value) => updatePartForm("notes", value)} />
                 <button
                   type="submit"
@@ -1070,6 +1103,31 @@ export function GarageManager() {
                           {part.source ? ` - ${part.source}` : ""}
                           {part.price ? ` - ${part.price}` : ""}
                         </p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <span className="rounded-md border border-volt/20 bg-volt/10 px-2 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#d8cba9]">
+                            {part.source_type || inferSourceType(part.source)}
+                          </span>
+                          {part.source_url ? (
+                            <a
+                              href={part.source_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 rounded-md border border-line bg-[#09160e] px-2 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#d8cba9] transition hover:border-volt hover:text-volt"
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                              Open source
+                            </a>
+                          ) : (
+                            <span className="rounded-md border border-line bg-[#09160e] px-2 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#9e9278]">
+                              URL needed
+                            </span>
+                          )}
+                        </div>
+                        {part.fitment_claim ? (
+                          <p className="mt-2 rounded-lg border border-line bg-[#0a180f] p-3 text-xs leading-5 text-[#d8cba9]">
+                            Listing claim: {part.fitment_claim}
+                          </p>
+                        ) : null}
                         {part.notes ? <p className="mt-2 text-sm leading-6 text-[#b8ac91]">{part.notes}</p> : null}
                         {part.fitment_score !== null ? (
                           <div className="mt-3 rounded-lg border border-volt/15 bg-volt/5 p-3">
@@ -1202,7 +1260,7 @@ function buildFitmentRequest(vehicle: GarageVehicle, part: PlannedPart): Fitment
     trim: vehicle.trim || "",
     partCategory: normalizePartCategory(part.category),
     partType: part.name,
-    specificPart: [part.name, part.source, part.price, part.notes].filter(Boolean).join(" - "),
+    specificPart: [part.name, part.source, part.source_type, part.price, part.fitment_claim, part.source_url, part.notes].filter(Boolean).join(" - "),
     currentWheelSize: extractWheelSize(vehicle.current_setup) || "18x8",
     newWheelSize: extractWheelSize(part.notes || part.name) || extractWheelSize(vehicle.current_setup) || "19x9.5",
     tireSize: extractTireSize(part.notes || vehicle.current_setup || "") || "255/35R19",
@@ -1211,6 +1269,31 @@ function buildFitmentRequest(vehicle: GarageVehicle, part: PlannedPart): Fitment
     spacerSize: extractSpacer(part.notes || vehicle.current_setup || "") || "0mm",
     notes: [vehicle.dream_setup, part.notes].filter(Boolean).join(" "),
   };
+}
+
+function normalizePartUrl(url: string) {
+  const trimmed = url.trim();
+
+  if (!trimmed) {
+    return null;
+  }
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+
+  return `https://${trimmed}`;
+}
+
+function inferSourceType(source: string | null | undefined) {
+  const lower = source?.toLowerCase() || "";
+
+  if (lower.includes("forum") || lower.includes("owner")) return "Forum";
+  if (lower.includes("shop") || lower.includes("tuning")) return "Shop";
+  if (lower.includes("ebay") || lower.includes("market")) return "Marketplace";
+  if (lower.includes("carbon") || lower.includes("motorsport") || lower.includes("performance")) return "Retailer";
+
+  return "Retailer";
 }
 
 function normalizePartCategory(category: string): PartCategory {
