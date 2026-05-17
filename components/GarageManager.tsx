@@ -79,6 +79,20 @@ type PlannedPartForm = {
   notes: string;
 };
 
+type SourceCandidate = {
+  id: string;
+  name: string;
+  category: string;
+  source: string;
+  sourceUrl: string;
+  sourceType: string;
+  price: string;
+  confidence: number;
+  fitmentClaim: string;
+  warning: string;
+  notes: string;
+};
+
 type AiNote = {
   id: string;
   user_id: string;
@@ -203,6 +217,7 @@ export function GarageManager() {
   const [aiNotesLoading, setAiNotesLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savingPart, setSavingPart] = useState(false);
+  const [savingCandidateId, setSavingCandidateId] = useState("");
   const [signingIn, setSigningIn] = useState(false);
   const [claimingVehicles, setClaimingVehicles] = useState(false);
   const [checkingPartId, setCheckingPartId] = useState("");
@@ -228,6 +243,10 @@ export function GarageManager() {
 
   const installedCount = plannedParts.filter((part) => part.status === "installed").length;
   const buildProgress = plannedParts.length ? Math.round((installedCount / plannedParts.length) * 100) : 0;
+  const sourceCandidates = useMemo(
+    () => buildSourceCandidates(partForm, selectedVehicle),
+    [partForm, selectedVehicle]
+  );
 
   useEffect(() => {
     const savedProfile = window.localStorage.getItem("fitmentai-profile");
@@ -587,6 +606,81 @@ export function GarageManager() {
       setPartsMessage(error instanceof Error ? error.message : "Planned part could not be saved.");
     } finally {
       setSavingPart(false);
+    }
+  }
+
+  async function saveSourceCandidate(candidate: SourceCandidate) {
+    if (!selectedVehicle || selectedVehicle.id.startsWith("demo-")) {
+      setPartsMessage("Save or select a database vehicle before saving a source candidate.");
+      return;
+    }
+
+    setSavingCandidateId(candidate.id);
+    setPartsMessage(`Saving ${candidate.source} to this build...`);
+
+    const optimisticPart: PlannedPart = {
+      id: `temp-${Date.now()}`,
+      vehicle_id: selectedVehicle.id,
+      name: candidate.name,
+      category: candidate.category,
+      source: candidate.source,
+      source_url: normalizePartUrl(candidate.sourceUrl),
+      source_type: candidate.sourceType,
+      price: candidate.price,
+      fitment_claim: candidate.fitmentClaim,
+      status: "planned",
+      fitment_score: null,
+      fitment_status: null,
+      fitment_warning: null,
+      fitment_recommendation: null,
+      fitment_checked_at: null,
+      notes: candidate.notes,
+      created_at: new Date().toISOString(),
+    };
+
+    setPlannedParts((current) => [optimisticPart, ...current]);
+
+    try {
+      const response = await fetchWithTimeout("/api/planned-parts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify({
+          vehicleId: selectedVehicle.id,
+          name: candidate.name,
+          category: candidate.category,
+          source: candidate.source,
+          sourceUrl: candidate.sourceUrl,
+          sourceType: candidate.sourceType,
+          price: candidate.price,
+          fitmentClaim: candidate.fitmentClaim,
+          notes: candidate.notes,
+        }),
+      }, 8000);
+      const result = (await response.json()) as {
+        plannedPart?: PlannedPart;
+        message?: string;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(result.error || result.message || "Source candidate could not be saved.");
+      }
+
+      if (result.plannedPart) {
+        setPlannedParts((current) =>
+          current.map((part) => (part.id === optimisticPart.id ? (result.plannedPart as PlannedPart) : part))
+        );
+      }
+
+      setPartsMessage(`${candidate.source} saved to this build. Run Check next to score fitment.`);
+    } catch (error) {
+      setPlannedParts((current) => current.filter((part) => part.id !== optimisticPart.id));
+      setPartsMessage(error instanceof Error ? error.message : "Source candidate could not be saved.");
+    } finally {
+      setSavingCandidateId("");
     }
   }
 
@@ -1023,6 +1117,90 @@ export function GarageManager() {
                 </button>
               </div>
 
+              <div className="mt-4 rounded-lg border border-line bg-[#07120c] p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-volt">Compare sources</p>
+                    <h4 className="mt-2 text-lg font-semibold text-[#f3ead5]">
+                      {partForm.name || "Part"} across websites
+                    </h4>
+                    <p className="mt-1 text-sm leading-6 text-[#9e9278]">
+                      Mock source comparison for the selected part idea. Later this can be powered by live manufacturer, retailer, marketplace, and shop data.
+                    </p>
+                  </div>
+                  <span className="rounded-md border border-volt/20 bg-volt/10 px-3 py-1 text-xs font-semibold text-[#d8cba9]">
+                    {sourceCandidates.length} sources
+                  </span>
+                </div>
+
+                <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                  {sourceCandidates.map((candidate) => (
+                    <div key={candidate.id} className="rounded-lg border border-line bg-[#09160e] p-3">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-semibold text-[#f3ead5]">{candidate.source}</p>
+                            <span className="rounded-md border border-volt/20 bg-volt/10 px-2 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#d8cba9]">
+                              {candidate.sourceType}
+                            </span>
+                            <span className={`rounded-md px-2 py-1 text-[11px] font-bold uppercase tracking-[0.12em] ${
+                              candidate.confidence >= 86
+                                ? "bg-signal/15 text-signal"
+                                : candidate.confidence >= 74
+                                  ? "bg-volt/15 text-volt"
+                                  : "bg-warning/15 text-orange-200"
+                            }`}>
+                              {candidate.confidence}% confidence
+                            </span>
+                          </div>
+                          <p className="mt-2 text-sm font-semibold text-[#d7c28b]">{candidate.price}</p>
+                          <p className="mt-2 text-xs leading-5 text-[#b8ac91]">Claim: {candidate.fitmentClaim}</p>
+                          <p className="mt-2 text-xs leading-5 text-orange-200">Check: {candidate.warning}</p>
+                        </div>
+                        <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">
+                          <a
+                            href={candidate.sourceUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-line px-3 text-xs font-semibold text-[#d8cba9] transition hover:border-volt hover:text-volt"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                            Open
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setPartForm({
+                                name: candidate.name,
+                                category: candidate.category,
+                                source: candidate.source,
+                                sourceUrl: candidate.sourceUrl,
+                                sourceType: candidate.sourceType,
+                                price: candidate.price,
+                                fitmentClaim: candidate.fitmentClaim,
+                                notes: candidate.notes,
+                              })
+                            }
+                            className="inline-flex h-9 items-center justify-center rounded-lg border border-line px-3 text-xs font-semibold text-[#d8cba9] transition hover:border-volt hover:text-volt"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void saveSourceCandidate(candidate)}
+                            disabled={savingCandidateId === candidate.id || !selectedVehicle || selectedVehicle.id.startsWith("demo-")}
+                            className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-volt px-3 text-xs font-semibold text-[#07120c] transition hover:bg-[#b98d31] disabled:cursor-not-allowed disabled:opacity-70"
+                          >
+                            {savingCandidateId === candidate.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                            Save best
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               <form onSubmit={savePlannedPart} className="mt-4 grid gap-3">
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Input label="Part name" value={partForm.name} onChange={(value) => updatePartForm("name", value)} required />
@@ -1294,6 +1472,69 @@ function inferSourceType(source: string | null | undefined) {
   if (lower.includes("carbon") || lower.includes("motorsport") || lower.includes("performance")) return "Retailer";
 
   return "Retailer";
+}
+
+function buildSourceCandidates(part: PlannedPartForm, vehicle: GarageVehicle | undefined): SourceCandidate[] {
+  const partName = part.name.trim() || "Selected part";
+  const category = part.category.trim() || "Performance";
+  const vehicleLabel = vehicle ? vehicleName(vehicle) : "selected vehicle";
+  const slug = encodeURIComponent(`${vehicleLabel} ${partName}`.toLowerCase().replace(/\s+/g, "-"));
+  const baseClaim = part.fitmentClaim.trim() || `Claims compatibility with ${vehicleLabel}.`;
+
+  return [
+    {
+      id: "manufacturer-direct",
+      name: partName,
+      category,
+      source: part.source.trim() || "Manufacturer Direct",
+      sourceUrl: part.sourceUrl.trim() || `https://www.google.com/search?q=${slug}+manufacturer`,
+      sourceType: part.sourceType.trim() || "Manufacturer",
+      price: part.price.trim() || "$350-$500",
+      confidence: 91,
+      fitmentClaim: baseClaim,
+      warning: "Best fitment evidence, but confirm exact trim and included hardware.",
+      notes: `Manufacturer-style source for ${vehicleLabel}. Save this when fitment notes and part numbers are clear.`,
+    },
+    {
+      id: "retailer-stock",
+      name: partName,
+      category,
+      source: "Specialty retailer",
+      sourceUrl: `https://www.google.com/search?q=${slug}+retailer`,
+      sourceType: "Retailer",
+      price: "$325-$575",
+      confidence: 82,
+      fitmentClaim: `Retailer listing says this fits ${vehicleLabel} or the same generation.`,
+      warning: "Check return policy, trim notes, and whether the listing uses generic compatibility.",
+      notes: `Retailer source candidate. Good for availability and returns, but verify the actual manufacturer part number.`,
+    },
+    {
+      id: "marketplace-value",
+      name: partName,
+      category,
+      source: "Marketplace listing",
+      sourceUrl: `https://www.google.com/search?q=${slug}+marketplace`,
+      sourceType: "Marketplace",
+      price: "$220-$430",
+      confidence: 64,
+      fitmentClaim: `Marketplace seller claims broad ${vehicle?.make || "vehicle"} fitment.`,
+      warning: "Higher risk: verify photos, part number, mounting points, seller reputation, and return terms.",
+      notes: "Marketplace option. Save only if the seller provides exact fitment proof and clear photos.",
+    },
+    {
+      id: "shop-verified",
+      name: partName,
+      category,
+      source: "Tuning shop recommendation",
+      sourceUrl: `https://www.google.com/search?q=${slug}+tuning+shop`,
+      sourceType: "Shop",
+      price: "$420-$700 installed",
+      confidence: 87,
+      fitmentClaim: `Shop-style recommendation based on installed builds similar to ${vehicleLabel}.`,
+      warning: "Usually stronger install confidence, but ask what labor, hardware, and warranty are included.",
+      notes: "Shop-backed source candidate. Useful when installation details matter as much as part price.",
+    },
+  ];
 }
 
 function normalizePartCategory(category: string): PartCategory {
