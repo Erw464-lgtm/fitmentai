@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, ExternalLink, Gauge, Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
+import { CheckCircle2, ExternalLink, Gauge, Loader2, Plus, Search, Sparkles, Trash2 } from "lucide-react";
 import { getAuthHeaders } from "@/lib/clientAuth";
 import type { FitmentRequest, FitmentResponse, PartCategory, SuspensionSetup } from "@/lib/fitmentScore";
 
@@ -215,6 +215,7 @@ export function GarageManager() {
   const [loading, setLoading] = useState(true);
   const [partsLoading, setPartsLoading] = useState(false);
   const [aiNotesLoading, setAiNotesLoading] = useState(false);
+  const [sourceSearching, setSourceSearching] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savingPart, setSavingPart] = useState(false);
   const [savingCandidateId, setSavingCandidateId] = useState("");
@@ -224,6 +225,8 @@ export function GarageManager() {
   const [message, setMessage] = useState("");
   const [partsMessage, setPartsMessage] = useState("");
   const [aiNotesMessage, setAiNotesMessage] = useState("");
+  const [sourceSearchMessage, setSourceSearchMessage] = useState("");
+  const [liveSourceCandidates, setLiveSourceCandidates] = useState<SourceCandidate[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
 
   const selectedVehicle = useMemo(
@@ -247,6 +250,7 @@ export function GarageManager() {
     () => buildSourceCandidates(partForm, selectedVehicle),
     [partForm, selectedVehicle]
   );
+  const displayedSourceCandidates = liveSourceCandidates.length ? liveSourceCandidates : sourceCandidates;
 
   useEffect(() => {
     const savedProfile = window.localStorage.getItem("fitmentai-profile");
@@ -681,6 +685,50 @@ export function GarageManager() {
       setPartsMessage(error instanceof Error ? error.message : "Source candidate could not be saved.");
     } finally {
       setSavingCandidateId("");
+    }
+  }
+
+  async function runLiveSourceSearch() {
+    setSourceSearching(true);
+    setSourceSearchMessage("Searching real source directories...");
+
+    try {
+      const response = await fetchWithTimeout("/api/source-search", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          vehicle: selectedVehicle
+            ? {
+                year: selectedVehicle.year,
+                make: selectedVehicle.make,
+                model: selectedVehicle.model,
+                trim: selectedVehicle.trim,
+              }
+            : undefined,
+          part: {
+            name: partForm.name,
+            category: partForm.category,
+          },
+        }),
+      }, 8000);
+      const result = (await response.json()) as {
+        sources?: SourceCandidate[];
+        message?: string;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(result.error || result.message || "Live source search could not run.");
+      }
+
+      setLiveSourceCandidates(result.sources ?? []);
+      setSourceSearchMessage(result.message || "Live source search ready.");
+    } catch (error) {
+      setSourceSearchMessage(error instanceof Error ? error.message : "Live source search could not run.");
+    } finally {
+      setSourceSearching(false);
     }
   }
 
@@ -1125,16 +1173,42 @@ export function GarageManager() {
                       {partForm.name || "Part"} across websites
                     </h4>
                     <p className="mt-1 text-sm leading-6 text-[#9e9278]">
-                      Mock source comparison for the selected part idea. Later this can be powered by live manufacturer, retailer, marketplace, and shop data.
+                      Run a live source search for real Porsche, Rennline, AA Carbon, AhaCarbon, retailer, and shop search links, then save the best source to this build.
                     </p>
                   </div>
-                  <span className="rounded-md border border-volt/20 bg-volt/10 px-3 py-1 text-xs font-semibold text-[#d8cba9]">
-                    {sourceCandidates.length} sources
-                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {liveSourceCandidates.length ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLiveSourceCandidates([]);
+                          setSourceSearchMessage("Showing starter comparison sources.");
+                        }}
+                        className="h-10 rounded-lg border border-line px-4 text-sm font-semibold text-[#d8cba9] transition hover:border-volt hover:text-volt"
+                      >
+                        Starter sources
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => void runLiveSourceSearch()}
+                      disabled={sourceSearching}
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-volt px-4 text-sm font-semibold text-[#07120c] transition hover:bg-[#b98d31] disabled:cursor-not-allowed disabled:opacity-70"
+                    >
+                      {sourceSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                      Live source search
+                    </button>
+                  </div>
                 </div>
 
+                {sourceSearchMessage ? (
+                  <p className="mt-3 rounded-lg border border-volt/25 bg-volt/10 p-3 text-sm text-[#d8cba9]">
+                    {sourceSearchMessage}
+                  </p>
+                ) : null}
+
                 <div className="mt-4 grid gap-3 lg:grid-cols-2">
-                  {sourceCandidates.map((candidate) => (
+                  {displayedSourceCandidates.map((candidate) => (
                     <div key={candidate.id} className="rounded-lg border border-line bg-[#09160e] p-3">
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div>
