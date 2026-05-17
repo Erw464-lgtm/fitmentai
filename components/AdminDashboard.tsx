@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ClipboardCopy, Download, Loader2, LockKeyhole, RefreshCw, Users } from "lucide-react";
+import { ClipboardCopy, Loader2, LockKeyhole, Mail, RefreshCw, Users } from "lucide-react";
 
 type WaitlistLead = {
   id?: string;
@@ -181,7 +181,7 @@ export function AdminDashboard() {
                     href={`mailto:${lead.email || ""}`}
                     className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-line px-3 text-xs font-semibold text-[#d8cba9] transition hover:border-volt hover:text-volt"
                   >
-                    <Download className="h-4 w-4 rotate-[-90deg]" />
+                    <Mail className="h-4 w-4" />
                     Email
                   </a>
                 </div>

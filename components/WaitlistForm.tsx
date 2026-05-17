@@ -105,8 +105,8 @@ export function WaitlistForm() {
         <p
           className={`rounded-lg border p-3 text-sm ${
             state === "error"
-              ? "border-red-200 bg-red-50 text-red-700"
-              : "border-emerald-200 bg-emerald-50 text-emerald-800"
+              ? "border-warning/35 bg-warning/10 text-orange-200"
+              : "border-signal/30 bg-signal/10 text-[#bfe5c6]"
           }`}
         >
           {message}

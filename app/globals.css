@@ -27,6 +27,19 @@ body {
   background: rgba(154, 116, 40, 0.35);
 }
 
+body::before {
+  pointer-events: none;
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.014) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.55), transparent 70%);
+}
+
 input,
 select,
 textarea,
@@ -35,5 +48,24 @@ button {
 }
 
 select {
-  color-scheme: light;
+  color-scheme: dark;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #07120c;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3d3320;
+  border: 2px solid #07120c;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9a7428;
 }

@@ -103,7 +103,7 @@ export function VerifiedSetups() {
           </h2>
         </div>
         <p className="max-w-2xl text-sm leading-7 text-[#b8ac91] md:text-base">
-          These mock verified records show how FitmentAI will compare complete builds:
+          These preview verified records show how FitmentAI will compare complete builds:
           wheel and tire fitment, suspension, brakes, exterior parts, performance
           upgrades, interior changes, install risk, and the recommended fix.
         </p>

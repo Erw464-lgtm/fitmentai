@@ -836,7 +836,7 @@ export function FitmentChecker() {
         </label>
 
         {error ? (
-          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          <div className="mt-4 rounded-lg border border-warning/35 bg-warning/10 p-3 text-sm text-orange-200">
             {error}
           </div>
         ) : null}
