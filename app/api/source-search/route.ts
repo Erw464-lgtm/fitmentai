@@ -14,6 +14,16 @@ type SourceSearchPayload = {
   };
 };
 
+type GeminiResponse = {
+  candidates?: Array<{
+    content?: {
+      parts?: Array<{
+        text?: string;
+      }>;
+    };
+  }>;
+};
+
 const sourceDirectory = [
   {
     id: "porsche-tequipment",
@@ -138,13 +148,141 @@ export async function POST(request: Request) {
         notes: `Live source search candidate for ${vehicleLabel || "selected vehicle"}. Open the source, confirm the exact listing, then save and run a fitment check.`,
       };
     });
+    const aiResult = await getAiSourceReadout({
+      query,
+      vehicleLabel,
+      partName,
+      category,
+      sources,
+    });
 
     return NextResponse.json({
       query,
       sources,
+      aiProvider: aiResult.provider,
+      aiSummary: aiResult.summary,
       message: `Live source search prepared for ${query}.`,
     });
   } catch {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
   }
+}
+
+async function getAiSourceReadout({
+  query,
+  vehicleLabel,
+  partName,
+  category,
+  sources,
+}: {
+  query: string;
+  vehicleLabel: string;
+  partName: string;
+  category: string;
+  sources: Array<{
+    source: string;
+    sourceType: string;
+    confidence: number;
+    warning: string;
+  }>;
+}) {
+  const fallback = buildLocalSourceReadout(sources);
+  const geminiKey = process.env.GEMINI_API_KEY;
+
+  if (!geminiKey) {
+    return {
+      provider: "mock",
+      summary: fallback,
+    };
+  }
+
+  try {
+    const model = normalizeGeminiModel(process.env.GEMINI_MODEL);
+    const prompt = [
+      "You are FitmentAI, an automotive parts sourcing assistant.",
+      "Rank these source-search candidates for a buyer who wants the safest source to inspect before saving a part.",
+      "Do not claim that a source definitely has the part. These are search links, not confirmed product listings.",
+      "Give concise practical advice with these exact labels: Best first source, Why, Watch-outs, Next step.",
+      "Keep it under 130 words.",
+      "",
+      `Vehicle: ${vehicleLabel || "not selected"}`,
+      `Part: ${partName}`,
+      `Category: ${category}`,
+      `Search query: ${query}`,
+      "",
+      "Sources:",
+      sources
+        .map((source) => `- ${source.source} (${source.sourceType}), confidence ${source.confidence}/100, warning: ${source.warning}`)
+        .join("\n"),
+    ].join("\n");
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(geminiKey)}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: prompt }],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.35,
+            maxOutputTokens: 260,
+          },
+        }),
+        cache: "no-store",
+      }
+    );
+    const data = (await response.json()) as GeminiResponse & { error?: { message?: string } };
+
+    if (!response.ok) {
+      return {
+        provider: "mock",
+        summary: fallback,
+        message: data.error?.message,
+      };
+    }
+
+    const summary = data.candidates?.[0]?.content?.parts
+      ?.map((part) => part.text)
+      .filter(Boolean)
+      .join("\n")
+      .trim();
+
+    return {
+      provider: summary ? "gemini" : "mock",
+      summary: summary || fallback,
+    };
+  } catch {
+    return {
+      provider: "mock",
+      summary: fallback,
+    };
+  }
+}
+
+function buildLocalSourceReadout(
+  sources: Array<{
+    source: string;
+    sourceType: string;
+    confidence: number;
+    warning: string;
+  }>
+) {
+  const best = [...sources].sort((a, b) => b.confidence - a.confidence)[0];
+
+  if (!best) {
+    return "Best first source: Run a source search first.\nWhy: FitmentAI needs source candidates before ranking them.\nWatch-outs: Confirm exact year, trim, and part number.\nNext step: Open the strongest listing, then save it to the build.";
+  }
+
+  return `Best first source: ${best.source}\nWhy: It has the strongest source confidence in this search set.\nWatch-outs: ${best.warning}\nNext step: Open the source, confirm the exact listing, save it to the build, then run a fitment check.`;
+}
+
+function normalizeGeminiModel(model?: string) {
+  return (model || "gemini-2.5-flash-lite").trim().replace(/^models\//, "");
 }

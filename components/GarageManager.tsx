@@ -226,6 +226,8 @@ export function GarageManager() {
   const [partsMessage, setPartsMessage] = useState("");
   const [aiNotesMessage, setAiNotesMessage] = useState("");
   const [sourceSearchMessage, setSourceSearchMessage] = useState("");
+  const [sourceSearchAiSummary, setSourceSearchAiSummary] = useState("");
+  const [sourceSearchProvider, setSourceSearchProvider] = useState("");
   const [liveSourceCandidates, setLiveSourceCandidates] = useState<SourceCandidate[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
 
@@ -715,6 +717,8 @@ export function GarageManager() {
       }, 8000);
       const result = (await response.json()) as {
         sources?: SourceCandidate[];
+        aiProvider?: string;
+        aiSummary?: string;
         message?: string;
         error?: string;
       };
@@ -724,6 +728,8 @@ export function GarageManager() {
       }
 
       setLiveSourceCandidates(result.sources ?? []);
+      setSourceSearchAiSummary(result.aiSummary || "");
+      setSourceSearchProvider(result.aiProvider === "gemini" ? "Gemini live" : "Local fallback");
       setSourceSearchMessage(result.message || "Live source search ready.");
     } catch (error) {
       setSourceSearchMessage(error instanceof Error ? error.message : "Live source search could not run.");
@@ -1182,6 +1188,8 @@ export function GarageManager() {
                         type="button"
                         onClick={() => {
                           setLiveSourceCandidates([]);
+                          setSourceSearchAiSummary("");
+                          setSourceSearchProvider("");
                           setSourceSearchMessage("Showing starter comparison sources.");
                         }}
                         className="h-10 rounded-lg border border-line px-4 text-sm font-semibold text-[#d8cba9] transition hover:border-volt hover:text-volt"
@@ -1205,6 +1213,21 @@ export function GarageManager() {
                   <p className="mt-3 rounded-lg border border-volt/25 bg-volt/10 p-3 text-sm text-[#d8cba9]">
                     {sourceSearchMessage}
                   </p>
+                ) : null}
+
+                {sourceSearchAiSummary ? (
+                  <div className="mt-3 rounded-lg border border-volt/20 bg-volt/5 p-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-volt" />
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-volt">AI source advisor</p>
+                      <span className="rounded-md border border-line bg-[#07120c] px-2 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#9e9278]">
+                        {sourceSearchProvider}
+                      </span>
+                    </div>
+                    <p className="mt-3 whitespace-pre-line text-sm leading-6 text-[#d8cba9]">
+                      {sourceSearchAiSummary}
+                    </p>
+                  </div>
                 ) : null}
 
                 <div className="mt-4 grid gap-3 lg:grid-cols-2">
