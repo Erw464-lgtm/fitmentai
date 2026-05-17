@@ -6,6 +6,8 @@
 alter table if exists public.profiles enable row level security;
 alter table if exists public.vehicles enable row level security;
 alter table if exists public.planned_parts enable row level security;
+alter table if exists public.parts enable row level security;
+alter table if exists public.part_sources enable row level security;
 alter table if exists public.waitlist enable row level security;
 
 drop policy if exists "profiles_select_own" on public.profiles;
@@ -18,6 +20,8 @@ drop policy if exists "planned_parts_select_own_vehicle" on public.planned_parts
 drop policy if exists "planned_parts_insert_own_vehicle" on public.planned_parts;
 drop policy if exists "planned_parts_update_own_vehicle" on public.planned_parts;
 drop policy if exists "planned_parts_delete_own_vehicle" on public.planned_parts;
+drop policy if exists "parts_select_public" on public.parts;
+drop policy if exists "part_sources_select_public" on public.part_sources;
 drop policy if exists "waitlist_insert_public" on public.waitlist;
 
 create policy "profiles_select_own"
@@ -157,6 +161,18 @@ using (
       and profiles.auth_user_id = auth.uid()
   )
 );
+
+create policy "parts_select_public"
+on public.parts
+for select
+to anon, authenticated
+using (true);
+
+create policy "part_sources_select_public"
+on public.part_sources
+for select
+to anon, authenticated
+using (true);
 
 create policy "waitlist_insert_public"
 on public.waitlist

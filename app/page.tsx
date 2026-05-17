@@ -18,6 +18,7 @@ import { ContactForm } from "@/components/ContactForm";
 import { DemoGuide } from "@/components/DemoGuide";
 import { FitmentChecker } from "@/components/FitmentChecker";
 import { GarageManager } from "@/components/GarageManager";
+import { PartsDatabase } from "@/components/PartsDatabase";
 import { SectionCard } from "@/components/SectionCard";
 import { TabbedPanels } from "@/components/TabbedPanels";
 import { VerifiedSetups } from "@/components/VerifiedSetups";
@@ -78,6 +79,7 @@ export default function Home() {
               <a className="transition hover:text-volt" href="#home">Home</a>
               <a className="transition hover:text-volt" href="#demo">Find Parts</a>
               <a className="transition hover:text-volt" href="#garage">My Garage</a>
+              <a className="transition hover:text-volt" href="#database">Database</a>
               <a className="transition hover:text-volt" href="#verified">Verified</a>
               <a className="transition hover:text-volt" href="#ask">Ask FitmentAI</a>
               <a className="transition hover:text-volt" href="#how">Roadmap</a>
@@ -93,6 +95,7 @@ export default function Home() {
             ["Home", "#home"],
             ["Find Parts", "#demo"],
             ["Garage", "#garage"],
+            ["Database", "#database"],
             ["Verified", "#verified"],
             ["Ask AI", "#ask"],
             ["Roadmap", "#how"],
@@ -278,6 +281,7 @@ export default function Home() {
           </>
         }
         garage={<GarageManager />}
+        database={<PartsDatabase />}
         verified={<VerifiedSetups />}
         ask={<AskFitmentAI />}
         how={

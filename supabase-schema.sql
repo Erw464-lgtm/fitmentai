@@ -26,12 +26,25 @@ create table if not exists public.vehicles (
 
 create table if not exists public.parts (
   id uuid primary key default gen_random_uuid(),
+  slug text unique,
   title text not null,
   brand text,
   category text not null,
   type text not null,
+  vehicle_make text,
+  vehicle_model text,
+  year_start integer,
+  year_end integer,
+  trim_notes text,
   normalized_specs jsonb not null default '{}'::jsonb,
   compatibility_notes text,
+  fitment_confidence integer check (fitment_confidence between 0 and 100),
+  fitment_risk text default 'Medium',
+  install_difficulty text default 'Moderate',
+  estimated_price text,
+  required_verification text[] not null default '{}',
+  tags text[] not null default '{}',
+  image_tone text default 'from-[#173923] via-[#0b1810] to-[#4f3b11]',
   created_at timestamptz not null default now()
 );
 
@@ -43,6 +56,10 @@ create table if not exists public.part_sources (
   trust_level text,
   url text,
   price_range text,
+  source_priority integer default 3,
+  inventory_status text default 'Research',
+  last_verified_at timestamptz,
+  source_notes text,
   created_at timestamptz not null default now()
 );
 
@@ -122,5 +139,7 @@ create index if not exists waitlist_email_idx on public.waitlist(email);
 create index if not exists vehicles_user_id_idx on public.vehicles(user_id);
 create index if not exists builds_user_id_idx on public.builds(user_id);
 create index if not exists parts_category_idx on public.parts(category);
+create index if not exists parts_vehicle_lookup_idx on public.parts(vehicle_make, vehicle_model, year_start, year_end);
+create index if not exists parts_tags_gin_idx on public.parts using gin(tags);
 create index if not exists planned_parts_vehicle_id_idx on public.planned_parts(vehicle_id);
 create index if not exists fitment_checks_user_id_idx on public.fitment_checks(user_id);
