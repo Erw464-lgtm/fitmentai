@@ -1179,7 +1179,7 @@ export function GarageManager() {
                       {partForm.name || "Part"} across websites
                     </h4>
                     <p className="mt-1 text-sm leading-6 text-[#9e9278]">
-                      Run a live source search for real Porsche, Rennline, AA Carbon, AhaCarbon, retailer, and shop search links, then save the best source to this build.
+                      Run a Porsche-focused source search across Rennline, Pelican Parts, AA Carbon, Fabspeed, Soul, Numeric, Suncoast, ECS, FCP Euro, and Flat 6 Motorsports.
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">

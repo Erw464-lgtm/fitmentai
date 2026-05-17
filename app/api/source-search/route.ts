@@ -31,8 +31,10 @@ const sourceDirectory = [
     sourceType: "Manufacturer",
     domain: "porsche.com",
     url: "https://www.porsche.com/usa/accessoriesandservices/tequipment/",
-    confidence: 92,
-    warning: "Best for genuine accessories, but confirm region, dealer availability, and exact model generation.",
+    searchMode: "direct",
+    confidence: 93,
+    specialty: "OEM accessories, genuine Porsche add-ons, dealer-supported parts",
+    warning: "Best for genuine accessories, but confirm region, dealer availability, and exact Macan generation.",
   },
   {
     id: "rennline",
@@ -40,26 +42,10 @@ const sourceDirectory = [
     sourceType: "Manufacturer",
     domain: "rennline.com",
     url: "https://www.rennline.com/search?q=",
-    confidence: 88,
+    searchMode: "query",
+    confidence: 90,
+    specialty: "Billet parts, interior upgrades, mounts, suspension, track accessories, aero, carbon",
     warning: "Strong Porsche aftermarket source. Confirm exact chassis, trim notes, and install instructions.",
-  },
-  {
-    id: "aa-carbon",
-    source: "AA Carbon Parts",
-    sourceType: "Retailer",
-    domain: "aacarbonparts.com",
-    url: "https://aacarbonparts.com/search?q=",
-    confidence: 74,
-    warning: "Good carbon source candidate. Verify product photos, material, return policy, and exact fitment claim.",
-  },
-  {
-    id: "ahacarbon",
-    source: "AhaCarbon",
-    sourceType: "Retailer",
-    domain: "ahacarbon.com",
-    url: "https://ahacarbon.com/search?q=",
-    confidence: 76,
-    warning: "Useful for carbon aero searches. Confirm vehicle years, installation method, and shipping/return terms.",
   },
   {
     id: "pelican-parts",
@@ -67,8 +53,65 @@ const sourceDirectory = [
     sourceType: "Retailer",
     domain: "pelicanparts.com",
     url: "https://www.google.com/search?q=",
-    confidence: 82,
-    warning: "Good Porsche catalog source. Confirm OEM/OES/aftermarket distinction and part number.",
+    searchMode: "site",
+    confidence: 86,
+    specialty: "OEM/OEM+ Porsche maintenance parts, DIY guides, repair articles, forum knowledge",
+    warning: "Great research source. Confirm whether the part is OEM, OES, aftermarket, or only a guide/article result.",
+  },
+  {
+    id: "aa-carbon",
+    source: "AA Carbon",
+    sourceType: "Retailer",
+    domain: "aacarbonparts.com",
+    url: "https://aacarbonparts.com/search?q=",
+    searchMode: "query",
+    confidence: 74,
+    specialty: "Carbon fiber aero, spoilers, diffusers, lips, body pieces, interior carbon",
+    warning: "Carbon parts need extra fitment proof. Verify photos, mounting method, material, shipping, and return policy.",
+  },
+  {
+    id: "fabspeed",
+    source: "Fabspeed Motorsport",
+    sourceType: "Manufacturer",
+    domain: "fabspeed.com",
+    url: "https://www.google.com/search?q=",
+    searchMode: "site",
+    confidence: 87,
+    specialty: "Premium Porsche exhausts, intakes, headers, tunes, and performance upgrades",
+    warning: "Performance parts can affect warranty, emissions, sound level, heat, and tune requirements.",
+  },
+  {
+    id: "soul",
+    source: "Soul Performance Products",
+    sourceType: "Manufacturer",
+    domain: "soulpp.com",
+    url: "https://www.google.com/search?q=",
+    searchMode: "site",
+    confidence: 86,
+    specialty: "High-end Porsche exhaust systems and performance hardware",
+    warning: "Confirm exhaust fitment, valve compatibility, emissions legality, sound expectations, and install hardware.",
+  },
+  {
+    id: "numeric-racing",
+    source: "Numeric Racing",
+    sourceType: "Manufacturer",
+    domain: "numericracing.com",
+    url: "https://numericracing.com/search?q=",
+    searchMode: "query",
+    confidence: 80,
+    specialty: "Porsche shifters, cables, pedals, and driver feel upgrades",
+    warning: "Best for Porsche manual/track feel parts. Confirm transmission compatibility before saving.",
+  },
+  {
+    id: "ahacarbon",
+    source: "AhaCarbon",
+    sourceType: "Retailer",
+    domain: "ahacarbon.com",
+    url: "https://ahacarbon.com/search?q=",
+    searchMode: "query",
+    confidence: 72,
+    specialty: "Factory-direct carbon fiber aero and styling parts",
+    warning: "Confirm Porsche model availability, year range, weave, finish, install method, and return terms.",
   },
   {
     id: "suncoast",
@@ -76,26 +119,43 @@ const sourceDirectory = [
     sourceType: "Retailer",
     domain: "suncoastparts.com",
     url: "https://www.google.com/search?q=",
-    confidence: 84,
-    warning: "Strong genuine Porsche parts candidate. Confirm exact trim and dealer fitment notes.",
-  },
-  {
-    id: "flat-6",
-    source: "Flat 6 Motorsports",
-    sourceType: "Shop",
-    domain: "flat6motorsports.com",
-    url: "https://www.google.com/search?q=",
-    confidence: 83,
-    warning: "Good Porsche performance source. Confirm supporting mods and install complexity.",
+    searchMode: "site",
+    confidence: 88,
+    specialty: "OEM Porsche dealer parts, accessories, curated enthusiast upgrades",
+    warning: "Strong OEM/dealer source. Confirm exact Macan generation, trim, and whether the item is genuine or curated aftermarket.",
   },
   {
     id: "ecs",
     source: "ECS Tuning",
     sourceType: "Retailer",
     domain: "ecstuning.com",
-    url: "https://www.google.com/search?q=",
-    confidence: 80,
-    warning: "Broad catalog source. Confirm brand, part number, and fitment notes before buying.",
+    url: "https://www.ecstuning.com/Search/SiteSearch/",
+    searchMode: "path",
+    confidence: 81,
+    specialty: "Large Euro enthusiast catalog for Porsche, Audi, BMW, VW parts",
+    warning: "Broad catalog source. Confirm brand, vehicle selector fitment, part number, and return terms.",
+  },
+  {
+    id: "fcp-euro",
+    source: "FCP Euro",
+    sourceType: "Retailer",
+    domain: "fcpeuro.com",
+    url: "https://www.fcpeuro.com/products?keywords=",
+    searchMode: "query",
+    confidence: 84,
+    specialty: "Euro maintenance, OEM/OE parts, replacement parts, lifetime replacement angle",
+    warning: "Best for maintenance/OE parts. Confirm Porsche catalog coverage and whether the part is performance or replacement.",
+  },
+  {
+    id: "flat-6",
+    source: "Flat 6 Motorsports",
+    sourceType: "Shop",
+    domain: "flat6motorsports.com",
+    url: "https://flat6motorsports.com/search?q=",
+    searchMode: "query",
+    confidence: 85,
+    specialty: "Boutique Porsche performance, aero, wheels, tuning, and curated aftermarket parts",
+    warning: "Good Porsche specialist source. Confirm supporting mods, install complexity, and whether it fits the Macan platform.",
   },
 ];
 
@@ -130,9 +190,7 @@ export async function POST(request: Request) {
 
     const sources = sourceDirectory.map((source) => {
       const sourceQuery = `${query} site:${source.domain}`;
-      const sourceUrl = source.url.includes("google.com/search")
-        ? `${source.url}${encodeURIComponent(sourceQuery)}`
-        : `${source.url}${encodeURIComponent(query)}`;
+      const sourceUrl = buildSourceUrl(source, query, sourceQuery);
 
       return {
         id: source.id,
@@ -143,7 +201,7 @@ export async function POST(request: Request) {
         sourceType: source.sourceType,
         price: "Live source",
         confidence: source.confidence,
-        fitmentClaim: `Live search for ${query} on ${source.source}.`,
+        fitmentClaim: `Live search for ${query} on ${source.source}. Specialty: ${source.specialty}.`,
         warning: source.warning,
         notes: `Live source search candidate for ${vehicleLabel || "selected vehicle"}. Open the source, confirm the exact listing, then save and run a fitment check.`,
       };
@@ -166,6 +224,29 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
   }
+}
+
+function buildSourceUrl(
+  source: {
+    url: string;
+    searchMode: string;
+  },
+  query: string,
+  sourceQuery: string
+) {
+  if (source.searchMode === "direct") {
+    return source.url;
+  }
+
+  if (source.searchMode === "site") {
+    return `${source.url}${encodeURIComponent(sourceQuery)}`;
+  }
+
+  if (source.searchMode === "path") {
+    return `${source.url}${encodeURIComponent(query).replace(/%20/g, "+")}`;
+  }
+
+  return `${source.url}${encodeURIComponent(query)}`;
 }
 
 async function getAiSourceReadout({
