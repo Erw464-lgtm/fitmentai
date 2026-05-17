@@ -68,6 +68,7 @@ export async function POST(request: Request) {
     const body = (await request.json()) as AskPayload;
     const question = body.question?.trim();
     const confidence = getConfidence(body);
+    const confidenceReason = getConfidenceReason(body);
     const followUps = getFollowUps(body);
 
     if (!question) {
@@ -82,6 +83,7 @@ export async function POST(request: Request) {
         answer: mockAnswer,
         provider: "mock",
         confidence,
+        confidenceReason,
         followUps,
         message: "GEMINI_API_KEY is not configured, so Ask FitmentAI used the local MVP response.",
       });
@@ -119,6 +121,7 @@ export async function POST(request: Request) {
         answer: mockAnswer,
         provider: "mock",
         confidence,
+        confidenceReason,
         followUps,
         message: data.error?.message || "Gemini request failed, so Ask FitmentAI used the local MVP response.",
       });
@@ -134,6 +137,7 @@ export async function POST(request: Request) {
       answer: answer || mockAnswer,
       provider: answer ? "gemini" : "mock",
       confidence,
+      confidenceReason,
       followUps,
       message: answer ? "Generated with Gemini." : "Gemini returned no text, so Ask FitmentAI used the local MVP response.",
     });
@@ -150,11 +154,14 @@ function buildPrompt(body: AskPayload) {
   const parts = (body.plannedParts || []).slice(0, 8);
 
   return [
-    "You are FitmentAI, a concise automotive build planning assistant.",
-    "Use the provided garage context to personalize the answer, but you may also use general automotive knowledge for broad build, performance, and planning questions.",
-    "Do not invent exact manufacturer fitment claims, part numbers, dyno numbers, or compatibility guarantees. If exact data is missing, give realistic ranges or decision factors and say what the user should verify.",
-    "Format every answer exactly with these short labeled sections: Short answer, Why it matters, Risk level, What to verify, Next step.",
-    "Keep the answer under 180 words.",
+    "You are FitmentAI, a concise automotive garage, sourcing, and build-planning assistant.",
+    "Sound like a practical enthusiast advisor: specific, calm, and useful. Use the provided garage context first, then general automotive knowledge where appropriate.",
+    "The MVP is especially focused on Porsche Macan-style demo flows, live source inspection, planned parts, fitment checks, and build priority.",
+    "Do not invent exact manufacturer fitment claims, part numbers, dyno numbers, prices, or compatibility guarantees. If exact data is missing, say what data is missing and how to verify it.",
+    "When the user asks about horsepower, explain realistic dependency factors instead of refusing. Use ranges only if clearly described as broad estimates.",
+    "When the user asks about a part, always tell them what source/listing details to verify before saving or buying.",
+    "Format every answer exactly with these labels: Short answer, Confidence, Biggest risk, Verify before buying, Next step.",
+    "Keep the answer under 190 words.",
     "",
     `User question: ${body.question}`,
     `Answer mode: ${body.mode || "general"}`,
@@ -205,6 +212,25 @@ function getConfidence(body: AskPayload) {
   return "Low confidence";
 }
 
+function getConfidenceReason(body: AskPayload) {
+  const parts = body.plannedParts || [];
+  const checkedParts = parts.filter((part) => part.fitment_score !== null && part.fitment_score !== undefined);
+
+  if (!body.vehicle) {
+    return "Low because no saved vehicle is attached yet. Add/select a garage car so FitmentAI can use year, make, model, trim, setup, and planned parts.";
+  }
+
+  if (checkedParts.length > 0) {
+    return `High because FitmentAI has a saved vehicle and ${checkedParts.length} checked part${checkedParts.length === 1 ? "" : "s"} with fitment results.`;
+  }
+
+  if (parts.length > 0) {
+    return `Medium because FitmentAI has your saved vehicle and ${parts.length} planned part${parts.length === 1 ? "" : "s"}, but no saved fitment score yet.`;
+  }
+
+  return "Medium because FitmentAI has your saved vehicle, but no planned parts or saved fitment checks yet.";
+}
+
 function getFollowUps(body: AskPayload) {
   switch (body.mode) {
     case "power-gains":
@@ -250,12 +276,12 @@ function buildMockAnswer(body: AskPayload) {
     lowerQuestion.includes("power") ||
     lowerQuestion.includes("performance")
   ) {
-    return `Performance estimate\n${contextLine}\n\nA turbo upgrade can add meaningful horsepower, but the exact gain depends on the turbo size, tune, fuel, intercooler, downpipe/exhaust flow, and engine health. For a 2017 Porsche Macan Turbo, I would treat this as a high-impact performance mod that needs supporting parts and professional tuning, not a simple bolt-on estimate.\n\nNext step: compare manufacturer dyno charts for the exact turbo kit, confirm ECU tuning support, and check heat management before buying.`;
+    return `Short answer\nA turbo upgrade can add meaningful power, but the real gain depends on the exact turbo, tune, fuel, intercooler, exhaust flow, and engine health.\n\nConfidence\nMedium for planning, lower for exact horsepower until a specific kit or dyno sheet is saved.\n\nBiggest risk\nHeat, tune reliability, warranty/emissions impact, and drivetrain stress.\n\nVerify before buying\nAsk for Macan Turbo-specific dyno data, required supporting mods, ECU/TCU tuning, install hardware, and shop experience.\n\nNext step\nSave the exact turbo kit or performance listing, then ask FitmentAI to compare supporting mods.`;
   }
 
   if (lowerQuestion.includes("risk") || lowerQuestion.includes("warning") || lowerQuestion.includes("fit")) {
     if (riskyParts.length === 0 && uncheckedParts.length === 0) {
-      return `Garage readout\n${contextLine}\n\nNo unresolved fitment warnings are saved right now. I would still verify exact trim, drivetrain, mounting points, brake clearance, and seller fitment notes before purchase.`;
+      return `Short answer\nNo unresolved fitment warnings are saved right now.\n\nConfidence\nMedium: ${contextLine}\n\nBiggest risk\nThe app cannot prove the listing until the exact source, part number, and install notes are saved.\n\nVerify before buying\nExact trim, drivetrain, mounting points, brake clearance, seller fitment notes, and return policy.\n\nNext step\nSave the listing to My Garage, then run a fitment check before buying.`;
     }
 
     const riskSummary = [...riskyParts, ...uncheckedParts]
@@ -268,16 +294,16 @@ function buildMockAnswer(body: AskPayload) {
       })
       .join("\n");
 
-    return `Fitment risk readout\n${contextLine}\n\nMain review items:\n${riskSummary}\n\nRecommendation: run checks on unchecked parts first, then fix or replace anything with a low score before buying more parts.`;
+    return `Short answer\nThese are the main parts to review before buying:\n${riskSummary}\n\nConfidence\nMedium: ${contextLine}\n\nBiggest risk\nUnchecked parts may have broad fitment claims without proof for your exact trim.\n\nVerify before buying\nPart number, year range, mounting points, tire/wheel clearance, and install photos on the same generation.\n\nNext step\nRun checks on unchecked parts first, then replace or fix anything with a low score.`;
   }
 
   if (lowerQuestion.includes("next") || lowerQuestion.includes("buy") || lowerQuestion.includes("recommend")) {
     if (!nextPart) {
-      return `Next move\n${contextLine}\n\nNo planned parts are saved yet. Add 2 or 3 parts you are considering, then I can rank them by fitment risk, install priority, and build impact.`;
+      return `Short answer\nNo planned parts are saved yet, so the smartest move is to add 2 or 3 real listings you are considering.\n\nConfidence\nMedium: ${contextLine}\n\nBiggest risk\nBuying from a broad compatibility claim without part-specific proof.\n\nVerify before buying\nSource, part number, vehicle selector fitment, install notes, and return policy.\n\nNext step\nUse live source search, save a listing, then run a fitment check.`;
     }
 
-    return `Next buy recommendation\n${contextLine}\n\nFocus on: ${nextPart.name}\nCategory: ${nextPart.category}${nextPart.source ? `\nSource: ${nextPart.source}` : ""}${nextPart.price ? `\nPrice: ${nextPart.price}` : ""}\n\nWhy: it is the next unresolved item in the build plan. Before buying, run or review its fitment check, confirm exact trim compatibility, and compare it against at least one verified install on the same generation.`;
+    return `Short answer\nFocus on ${nextPart.name} next.\n\nConfidence\nMedium: ${contextLine}\n\nBiggest risk\n${nextPart.fitment_warning || "The exact listing still needs proof for your vehicle."}\n\nVerify before buying\nCategory: ${nextPart.category}${nextPart.source ? `\nSource: ${nextPart.source}` : ""}${nextPart.price ? `\nPrice: ${nextPart.price}` : ""}\nConfirm exact trim compatibility, included hardware, return policy, and at least one same-generation install.\n\nNext step\nRun or review its fitment check, then compare one backup source before buying.`;
   }
 
-  return `Garage recommendation\n${contextLine}\n\nSaved parts: ${plannedParts.length}\nChecked parts: ${checkedParts.length}\nUnchecked parts: ${uncheckedParts.length}\nRisk flags: ${riskyParts.length}\n\nBest next step: run fitment checks on unchecked parts first, resolve low-score warnings, then buy the parts with the clearest vehicle-specific fitment evidence.`;
+  return `Short answer\nYour garage has ${plannedParts.length} saved part${plannedParts.length === 1 ? "" : "s"}, ${checkedParts.length} checked, ${uncheckedParts.length} unchecked, and ${riskyParts.length} risk flag${riskyParts.length === 1 ? "" : "s"}.\n\nConfidence\n${getConfidence(body)}: ${contextLine}\n\nBiggest risk\nBuying an unchecked part before the listing has vehicle-specific proof.\n\nVerify before buying\nExact trim fitment, part number, install hardware, source reputation, and return policy.\n\nNext step\nRun fitment checks on unchecked parts first, then buy the parts with the clearest evidence.`;
 }

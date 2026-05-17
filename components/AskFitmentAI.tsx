@@ -45,6 +45,7 @@ type ChatMessage = {
   question?: string;
   mode?: AnswerMode;
   confidence?: string;
+  confidenceReason?: string;
   followUps?: string[];
   saved?: boolean;
 };
@@ -206,6 +207,7 @@ export function AskFitmentAI() {
         provider?: string;
         error?: string;
         confidence?: string;
+        confidenceReason?: string;
         followUps?: string[];
       };
       const answer = result.answer || buildMockAnswer(nextQuestion, selectedVehicle, plannedParts, profile);
@@ -224,6 +226,7 @@ export function AskFitmentAI() {
           question: nextQuestion,
           mode: nextMode,
           confidence: result.confidence,
+          confidenceReason: result.confidenceReason,
           followUps: result.followUps,
         },
       ]);
@@ -240,6 +243,7 @@ export function AskFitmentAI() {
           question: nextQuestion,
           mode: nextMode,
           confidence: "Local fallback",
+          confidenceReason: "The live API request failed, so this answer used only the local garage fallback.",
         },
       ]);
       setQuestion("");
@@ -450,7 +454,7 @@ export function AskFitmentAI() {
                   {message.role === "assistant" ? "FitmentAI" : "You"}
                 </div>
                 <p className="whitespace-pre-line">{message.content}</p>
-                {message.role === "assistant" && (message.confidence || message.followUps?.length || index > 0) ? (
+                {message.role === "assistant" && (message.confidence || message.confidenceReason || message.followUps?.length || index > 0) ? (
                   <div className="mt-4 border-t border-line pt-3">
                     <div className="flex flex-wrap items-center gap-2">
                       {message.confidence ? (
@@ -470,6 +474,11 @@ export function AskFitmentAI() {
                         </button>
                       ) : null}
                     </div>
+                    {message.confidenceReason ? (
+                      <p className="mt-3 rounded-md border border-line bg-[#09160e] px-3 py-2 text-xs leading-5 text-[#b8ac91]">
+                        {message.confidenceReason}
+                      </p>
+                    ) : null}
                     {message.followUps?.length ? (
                       <div className="mt-3 flex flex-wrap gap-2">
                         {message.followUps.map((followUp) => (
