@@ -25,7 +25,9 @@ add column if not exists last_verified_at timestamptz,
 add column if not exists source_notes text;
 
 create unique index if not exists parts_slug_uidx on public.parts(slug) where slug is not null;
+create unique index if not exists parts_slug_full_uidx on public.parts(slug);
 create unique index if not exists part_sources_part_source_uidx on public.part_sources(part_id, source_name) where source_name is not null;
+create unique index if not exists part_sources_part_source_full_uidx on public.part_sources(part_id, source_name);
 create index if not exists parts_vehicle_lookup_idx on public.parts(vehicle_make, vehicle_model, year_start, year_end);
 create index if not exists parts_tags_gin_idx on public.parts using gin(tags);
 
@@ -217,6 +219,19 @@ on conflict (slug) do update set
   tags = excluded.tags,
   image_tone = excluded.image_tone;
 
+delete from public.part_sources
+using public.parts
+where part_sources.part_id = parts.id
+  and parts.slug in (
+    '2017-porsche-macan-turbo-fabspeed-high-flow-intake',
+    '2017-porsche-macan-turbo-soul-performance-exhaust',
+    '2017-porsche-macan-turbo-aa-carbon-rear-spoiler',
+    '2017-porsche-macan-turbo-rennline-billet-interior',
+    '2017-porsche-macan-turbo-suncoast-oem-accessory',
+    '2017-porsche-macan-turbo-fcp-euro-maintenance-kit',
+    '2017-porsche-macan-turbo-flat6-performance-package'
+  );
+
 insert into public.part_sources (
   part_id,
   source_name,
@@ -245,13 +260,4 @@ join (
   ('2017-porsche-macan-turbo-fcp-euro-maintenance-kit', 'Pelican Parts', 'Retailer', 'High', 'https://www.google.com/search?q=site%3Apelicanparts.com+2017+Porsche+Macan+Turbo+maintenance', 'Varies', 2, 'Research', 'Strong DIY/research backup source.'),
   ('2017-porsche-macan-turbo-flat6-performance-package', 'Flat 6 Motorsports', 'Shop', 'High', 'https://flat6motorsports.com/search?q=2017%20Porsche%20Macan%20Turbo', 'Varies', 1, 'Research', 'Porsche specialist source for staged upgrade logic.')
 ) as source_seed(slug, source_name, source_type, trust_level, url, price_range, source_priority, inventory_status, source_notes)
-on source_seed.slug = parts.slug
-on conflict (part_id, source_name) do update set
-  source_type = excluded.source_type,
-  trust_level = excluded.trust_level,
-  url = excluded.url,
-  price_range = excluded.price_range,
-  source_priority = excluded.source_priority,
-  inventory_status = excluded.inventory_status,
-  source_notes = excluded.source_notes,
-  last_verified_at = excluded.last_verified_at;
+on source_seed.slug = parts.slug;
