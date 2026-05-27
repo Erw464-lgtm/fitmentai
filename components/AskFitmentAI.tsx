@@ -102,6 +102,19 @@ export function AskFitmentAI() {
     void loadAiStatus();
 
     const savedProfile = window.localStorage.getItem("fitmentai-profile");
+    const askDraft = window.localStorage.getItem("fitmentai-ask-draft");
+
+    if (askDraft) {
+      setQuestion(askDraft);
+      setMessages((current) => [
+        ...current,
+        {
+          role: "assistant",
+          content: "Catalog part question loaded. Press Ask and I will use your garage context if you are signed in.",
+        },
+      ]);
+      window.localStorage.removeItem("fitmentai-ask-draft");
+    }
 
     if (!savedProfile) {
       setContextLoading(false);

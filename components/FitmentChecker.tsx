@@ -374,6 +374,24 @@ export function FitmentChecker() {
 
   useEffect(() => {
     const savedProfile = window.localStorage.getItem("fitmentai-profile");
+    const fitmentDraft = window.localStorage.getItem("fitmentai-fitment-draft");
+
+    if (fitmentDraft) {
+      try {
+        const parsedDraft = JSON.parse(fitmentDraft) as Partial<FitmentRequest>;
+        setForm((current) => ({
+          ...current,
+          ...parsedDraft,
+          partCategory: (parsedDraft.partCategory as PartCategory) || current.partCategory,
+          suspensionSetup: (parsedDraft.suspensionSetup as SuspensionSetup) || current.suspensionSetup,
+        }));
+        setListingMessage("Catalog part loaded into the Fitment Checker. Review the setup, then run the score.");
+      } catch {
+        setListingMessage("Catalog fitment draft could not be loaded.");
+      } finally {
+        window.localStorage.removeItem("fitmentai-fitment-draft");
+      }
+    }
 
     if (!savedProfile) {
       return;

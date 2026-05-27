@@ -264,6 +264,7 @@ export function GarageManager() {
   useEffect(() => {
     const savedProfile = window.localStorage.getItem("fitmentai-profile");
     const savedSession = window.localStorage.getItem("fitmentai-session");
+    const catalogDraft = window.localStorage.getItem("fitmentai-catalog-part-draft");
 
     if (savedProfile) {
       try {
@@ -278,6 +279,28 @@ export function GarageManager() {
         }));
       } catch {
         window.localStorage.removeItem("fitmentai-profile");
+      }
+    }
+
+    if (catalogDraft) {
+      try {
+        const parsedDraft = JSON.parse(catalogDraft) as Partial<PlannedPartForm>;
+        setPartForm((current) => ({
+          ...current,
+          name: parsedDraft.name || current.name,
+          category: parsedDraft.category || current.category,
+          source: parsedDraft.source || current.source,
+          sourceUrl: parsedDraft.sourceUrl || current.sourceUrl,
+          sourceType: parsedDraft.sourceType || current.sourceType,
+          price: parsedDraft.price || current.price,
+          fitmentClaim: parsedDraft.fitmentClaim || current.fitmentClaim,
+          notes: parsedDraft.notes || current.notes,
+        }));
+        setPartsMessage("Catalog part draft loaded. Select a saved vehicle, review the details, then save it to this car.");
+      } catch {
+        setPartsMessage("Catalog draft could not be loaded.");
+      } finally {
+        window.localStorage.removeItem("fitmentai-catalog-part-draft");
       }
     }
   }, []);

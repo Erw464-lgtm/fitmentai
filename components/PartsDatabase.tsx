@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ClipboardCopy, Database, ExternalLink, Loader2, Search, ShieldCheck } from "lucide-react";
+import { BookmarkPlus, ClipboardCopy, Database, ExternalLink, Gauge, HelpCircle, Loader2, MessageCircle, Search, ShieldCheck } from "lucide-react";
 
 type CatalogSource = {
   id: string;
@@ -43,6 +43,7 @@ export function PartsDatabase() {
   const [message, setMessage] = useState("");
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All");
+  const [expandedWhy, setExpandedWhy] = useState("");
 
   useEffect(() => {
     void loadCatalog();
@@ -118,6 +119,59 @@ export function PartsDatabase() {
     } catch {
       setMessage("Clipboard blocked. Open the source and copy details manually.");
     }
+  }
+
+  function sendToGarage(part: CatalogPart) {
+    const primarySource = part.sources?.[0];
+
+    window.localStorage.setItem(
+      "fitmentai-catalog-part-draft",
+      JSON.stringify({
+        name: `${part.brand} ${part.title}`,
+        category: part.category,
+        source: primarySource?.source_name || part.brand,
+        sourceUrl: primarySource?.url || "",
+        sourceType: primarySource?.source_type || "Retailer",
+        price: primarySource?.price_range || part.estimated_price,
+        fitmentClaim: `${part.compatibility_notes} Confidence: ${part.fitment_confidence}/100. Risk: ${part.fitment_risk}.`,
+        notes: [
+          part.trim_notes,
+          `Install difficulty: ${part.install_difficulty}.`,
+          `Verify: ${(part.required_verification || []).join(", ")}`,
+        ]
+          .filter(Boolean)
+          .join(" "),
+      })
+    );
+    setMessage(`${part.brand} draft sent to My Garage. Select a saved car, then save it to the build.`);
+    window.location.hash = "garage";
+  }
+
+  function sendToFitment(part: CatalogPart) {
+    window.localStorage.setItem(
+      "fitmentai-fitment-draft",
+      JSON.stringify({
+        year: "2017",
+        make: part.vehicle_make || "Porsche",
+        model: part.vehicle_model || "Macan",
+        trim: "Turbo",
+        partCategory: normalizeFitmentCategory(part.category),
+        partType: part.type || part.category,
+        specificPart: `${part.brand} ${part.title} - ${part.compatibility_notes}`,
+        notes: `${part.trim_notes} Verify before buying: ${(part.required_verification || []).join(", ")}.`,
+      })
+    );
+    setMessage(`${part.brand} sent to the Fitment Checker.`);
+    window.location.hash = "demo";
+  }
+
+  function sendToAsk(part: CatalogPart) {
+    window.localStorage.setItem(
+      "fitmentai-ask-draft",
+      `Should I buy the ${part.brand} ${part.title} for my 2017 Porsche Macan Turbo? Explain the fitment score, missing proof, risks, and what I should verify before buying.`
+    );
+    setMessage(`${part.brand} question sent to Ask FitmentAI.`);
+    window.location.hash = "ask";
   }
 
   return (
@@ -215,8 +269,72 @@ export function PartsDatabase() {
                   <MiniMetric label="Price" value={part.estimated_price} />
                 </div>
 
+                <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                  <button
+                    type="button"
+                    onClick={() => sendToGarage(part)}
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-volt px-3 text-xs font-semibold text-[#07120c] transition hover:bg-[#b98d31]"
+                  >
+                    <BookmarkPlus className="h-4 w-4" />
+                    Save draft
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => sendToFitment(part)}
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-line bg-[#09160e] px-3 text-xs font-semibold text-[#d8cba9] transition hover:border-volt hover:text-volt"
+                  >
+                    <Gauge className="h-4 w-4" />
+                    Check fitment
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => sendToAsk(part)}
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-line bg-[#09160e] px-3 text-xs font-semibold text-[#d8cba9] transition hover:border-volt hover:text-volt"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    Ask AI
+                  </button>
+                </div>
+
                 <p className="mt-4 text-sm leading-6 text-[#b8ac91]">{part.compatibility_notes}</p>
                 <p className="mt-2 text-xs leading-5 text-[#9e9278]">{part.trim_notes}</p>
+
+                <div className="mt-4 rounded-lg border border-line bg-[#09160e] p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-volt">
+                      <HelpCircle className="h-4 w-4" />
+                      Why this score?
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setExpandedWhy((current) => (current === part.id ? "" : part.id))}
+                      className="rounded-md border border-line px-2 py-1 text-xs font-semibold text-[#d8cba9] transition hover:border-volt hover:text-volt"
+                    >
+                      {expandedWhy === part.id ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                  {expandedWhy === part.id ? (
+                    <div className="mt-3 grid gap-2 text-xs leading-5 text-[#b8ac91] sm:grid-cols-2">
+                      <EvidenceLine label="What helps" value={scoreHelps(part)} />
+                      <EvidenceLine label="What hurts" value={scoreHurts(part)} />
+                      <EvidenceLine label="Improve score" value={scoreImprovement(part)} />
+                      <EvidenceLine label="Confidence reason" value={confidenceReason(part)} />
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="mt-4 rounded-lg border border-line bg-[#09160e] p-3">
+                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-volt">
+                    <Database className="h-4 w-4" />
+                    Fitment evidence
+                  </div>
+                  <div className="mt-3 grid gap-2 text-xs leading-5 text-[#b8ac91] sm:grid-cols-2">
+                    <EvidenceLine label="Manufacturer claim" value={part.compatibility_notes || "No claim saved yet"} />
+                    <EvidenceLine label="Source proof" value={`${part.sources?.length || 0} source${part.sources?.length === 1 ? "" : "s"} attached`} />
+                    <EvidenceLine label="Verified setup match" value={part.fitment_confidence >= 85 ? "Strong Macan catalog match" : "Needs same-car install proof"} />
+                    <EvidenceLine label="Missing proof" value={(part.required_verification || []).slice(0, 3).join(", ")} />
+                  </div>
+                </div>
 
                 <div className="mt-4 rounded-lg border border-volt/15 bg-volt/5 p-3">
                   <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-volt">
@@ -276,4 +394,48 @@ function MiniMetric({ label, value }: { label: string; value: string }) {
       <p className="mt-1 text-sm font-semibold text-[#f3ead5]">{value}</p>
     </div>
   );
+}
+
+function EvidenceLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-line bg-[#07120c] p-3">
+      <p className="font-semibold uppercase tracking-[0.12em] text-[#d7c28b]">{label}</p>
+      <p className="mt-1 text-[#b8ac91]">{value || "Not available yet"}</p>
+    </div>
+  );
+}
+
+function scoreHelps(part: CatalogPart) {
+  const helpers = [];
+  if (part.sources?.some((source) => source.trust_level === "High")) helpers.push("high-trust source");
+  if (part.year_start && part.year_end) helpers.push("saved year range");
+  if (part.tags?.includes("Porsche") || part.tags?.includes("Macan")) helpers.push("vehicle-specific tags");
+  return helpers.join(", ") || "structured catalog data";
+}
+
+function scoreHurts(part: CatalogPart) {
+  const concerns = [];
+  if (part.fitment_risk.toLowerCase().includes("medium")) concerns.push("fitment still needs proof");
+  if (part.category === "Exterior") concerns.push("body-panel tolerance risk");
+  if (part.category === "Performance") concerns.push("supporting mod / legality checks");
+  return concerns.join(", ") || "few obvious blockers";
+}
+
+function scoreImprovement(part: CatalogPart) {
+  return `Add same-car install proof, exact part number, and ${part.required_verification?.[0] || "manufacturer fitment notes"}.`;
+}
+
+function confidenceReason(part: CatalogPart) {
+  return `${part.fitment_confidence}/100 because FitmentAI has ${part.sources?.length || 0} source${part.sources?.length === 1 ? "" : "s"}, ${part.required_verification?.length || 0} verification checks, and a ${part.fitment_risk} risk rating.`;
+}
+
+function normalizeFitmentCategory(category: string) {
+  const lower = category.toLowerCase();
+  if (lower.includes("wheel")) return "wheels";
+  if (lower.includes("tire")) return "tires";
+  if (lower.includes("suspension")) return "suspension";
+  if (lower.includes("spacer") || lower.includes("adapter")) return "spacers-adapters";
+  if (lower.includes("brake")) return "brakes";
+  if (lower.includes("exterior")) return "exterior";
+  return "performance-interior";
 }
