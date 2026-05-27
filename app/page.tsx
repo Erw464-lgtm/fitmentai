@@ -14,6 +14,7 @@ import {
 import { AccountMenu } from "@/components/AccountMenu";
 import { AdminDashboard } from "@/components/AdminDashboard";
 import { AskFitmentAI } from "@/components/AskFitmentAI";
+import { BuildTwinStudio } from "@/components/BuildTwinStudio";
 import { ContactForm } from "@/components/ContactForm";
 import { DemoGuide } from "@/components/DemoGuide";
 import { FitmentChecker } from "@/components/FitmentChecker";
@@ -75,8 +76,9 @@ export default function Home() {
             </span>
           </a>
           <div className="flex items-center gap-3">
-            <nav className="hidden items-center gap-6 text-sm font-medium text-[#b8ac91] md:flex">
+            <nav className="hidden items-center gap-4 text-sm font-medium text-[#b8ac91] md:flex">
               <a className="transition hover:text-volt" href="#home">Home</a>
+              <a className="transition hover:text-volt" href="#twin">Build Twin</a>
               <a className="transition hover:text-volt" href="#demo">Find Parts</a>
               <a className="transition hover:text-volt" href="#garage">My Garage</a>
               <a className="transition hover:text-volt" href="#database">Database</a>
@@ -93,6 +95,7 @@ export default function Home() {
         <nav className="mx-auto flex max-w-7xl gap-2 overflow-x-auto px-4 pb-3 text-xs font-semibold text-[#b8ac91] md:hidden">
           {[
             ["Home", "#home"],
+            ["Build Twin", "#twin"],
             ["Find Parts", "#demo"],
             ["Garage", "#garage"],
             ["Database", "#database"],
@@ -207,6 +210,7 @@ export default function Home() {
             </section>
           </>
         }
+        twin={<BuildTwinStudio />}
         demo={
           <>
             <DemoGuide />
