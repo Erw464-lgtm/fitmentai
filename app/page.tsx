@@ -1,5 +1,4 @@
 import {
-  ArrowRight,
   BadgeCheck,
   Camera,
   Car,
@@ -7,7 +6,6 @@ import {
   Gauge,
   Layers3,
   PackageCheck,
-  ShieldAlert,
   Store,
   Wrench,
 } from "lucide-react";
@@ -19,7 +17,6 @@ import { ContactForm } from "@/components/ContactForm";
 import { DemoGuide } from "@/components/DemoGuide";
 import { FitmentChecker } from "@/components/FitmentChecker";
 import { GarageManager } from "@/components/GarageManager";
-import { HeroPartMatch } from "@/components/HeroPartMatch";
 import { HeroScrollDemo } from "@/components/HeroScrollDemo";
 import { PartsDatabase } from "@/components/PartsDatabase";
 import { SectionCard } from "@/components/SectionCard";
@@ -27,6 +24,7 @@ import { TabbedPanels } from "@/components/TabbedPanels";
 import { VerifiedSetups } from "@/components/VerifiedSetups";
 import { WaitlistForm } from "@/components/WaitlistForm";
 import { Footer } from "@/components/ui/footer-section";
+import { HeroSection } from "@/components/ui/hero-section-9";
 
 const problems = [
   "Aftermarket parts are scattered across manufacturer sites, parts stores, forums, screenshots, listings, and guesswork.",
@@ -122,44 +120,7 @@ export default function Home() {
       <TabbedPanels
         home={
           <>
-            <section id="home" className="relative mx-auto grid max-w-7xl gap-8 px-4 pb-10 pt-8 md:px-8 lg:grid-cols-[0.84fr_1.16fr] lg:gap-10 lg:pb-16 lg:pt-14">
-              <div className="absolute inset-x-5 top-8 -z-10 h-[520px] rounded-[40px] bg-[radial-gradient(circle_at_24%_35%,rgba(154,116,40,0.18),transparent_34%),radial-gradient(circle_at_74%_45%,rgba(47,138,85,0.14),transparent_36%)] blur-2xl" />
-              <div className="flex flex-col justify-center">
-                <div className="mb-5 inline-flex w-fit items-center gap-2 rounded-lg border border-line bg-panel/90 px-3 py-2 text-sm font-medium text-[#d8cba9] shadow-sm">
-                  <ShieldAlert className="h-4 w-4 text-warning" />
-                  Part search + fitment confidence
-                </div>
-                <h1 className="max-w-4xl text-4xl font-semibold leading-[1.02] text-[#f3ead5] md:text-7xl">
-                  FitmentAI
-                </h1>
-                <p className="mt-5 text-xl font-medium text-[#d7c28b] md:text-3xl">
-                  Know if it fits before you buy.
-                </p>
-                <p className="mt-5 max-w-2xl text-base leading-7 text-[#b8ac91] md:mt-6 md:text-lg md:leading-8">
-                  A focused platform for finding aftermarket parts from manufacturer and
-                  parts websites, then checking whether wheels, tires, suspension,
-                  aero, lighting, intakes, body panels, and exhaust systems fit your
-                  exact car before money leaves the account.
-                </p>
-                <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                  <a
-                    href="#demo"
-                    className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-volt px-6 font-semibold text-[#07120c] transition hover:bg-[#b98d31]"
-                  >
-                    Try Parts + Fitment
-                    <ArrowRight className="h-4 w-4" />
-                  </a>
-                  <a
-                    href="#waitlist"
-                    className="inline-flex h-12 items-center justify-center rounded-lg border border-line bg-panel/80 px-6 font-semibold text-[#f3ead5] transition hover:border-volt hover:text-volt"
-                  >
-                    Join Waitlist
-                  </a>
-                </div>
-              </div>
-
-              <HeroPartMatch />
-            </section>
+            <HeroSection />
 
             <HeroScrollDemo />
 
