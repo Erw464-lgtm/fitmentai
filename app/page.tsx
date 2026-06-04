@@ -26,6 +26,7 @@ import { SectionCard } from "@/components/SectionCard";
 import { TabbedPanels } from "@/components/TabbedPanels";
 import { VerifiedSetups } from "@/components/VerifiedSetups";
 import { WaitlistForm } from "@/components/WaitlistForm";
+import { Footer } from "@/components/ui/footer-section";
 
 const problems = [
   "Aftermarket parts are scattered across manufacturer sites, parts stores, forums, screenshots, listings, and guesswork.",
@@ -322,9 +323,9 @@ export default function Home() {
         }
       />
 
-      <footer className="border-t border-line bg-[#07120c]/80 px-4 py-5 text-center text-xs leading-5 text-[#9e9278] md:px-8">
-        FitmentAI is an early build-planning platform. Always verify final fitment, safety, legality, and warranty impact with the manufacturer or a qualified shop before purchase or installation.
-      </footer>
+      <div className="px-4 pt-10 md:px-8">
+        <Footer />
+      </div>
     </main>
   );
 }
