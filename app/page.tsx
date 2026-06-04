@@ -20,6 +20,7 @@ import { DemoGuide } from "@/components/DemoGuide";
 import { FitmentChecker } from "@/components/FitmentChecker";
 import { GarageManager } from "@/components/GarageManager";
 import { HeroPartMatch } from "@/components/HeroPartMatch";
+import { HeroScrollDemo } from "@/components/HeroScrollDemo";
 import { PartsDatabase } from "@/components/PartsDatabase";
 import { SectionCard } from "@/components/SectionCard";
 import { TabbedPanels } from "@/components/TabbedPanels";
@@ -158,6 +159,8 @@ export default function Home() {
 
               <HeroPartMatch />
             </section>
+
+            <HeroScrollDemo />
 
             <section className="relative mx-auto grid max-w-7xl gap-8 px-4 py-12 md:px-8 lg:grid-cols-[0.9fr_1.1fr]">
               <div className="absolute inset-x-5 top-0 -z-10 h-[420px] rounded-[40px] bg-[radial-gradient(circle_at_20%_30%,rgba(47,138,85,0.15),transparent_36%),radial-gradient(circle_at_80%_55%,rgba(154,116,40,0.12),transparent_36%)] blur-2xl" />
