@@ -1,7 +1,9 @@
 "use client";
 
+import { useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import {
   ArrowRight,
   BadgeCheck,
@@ -22,15 +24,33 @@ const proofSignals = [
 ];
 
 export function HeroSection() {
+  const heroRef = useRef<HTMLElement>(null);
+  const shouldReduceMotion = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
+  const dashboardY = useTransform(scrollYProgress, [0, 1], [0, shouldReduceMotion ? 0 : 80]);
+  const dashboardScale = useTransform(scrollYProgress, [0, 1], [1, shouldReduceMotion ? 1 : 0.96]);
+  const glowOpacity = useTransform(scrollYProgress, [0, 0.65], [1, shouldReduceMotion ? 1 : 0.35]);
+
   return (
-    <section id="home" className="relative overflow-hidden border-b border-line bg-[#07120c]">
+    <section id="home" ref={heroRef} className="relative overflow-hidden border-b border-line bg-[#07120c]">
       <div aria-hidden className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-48 -top-64 h-[58rem] w-[28rem] -rotate-45 rounded-full bg-[radial-gradient(circle,rgba(154,116,40,0.16),transparent_68%)]" />
-        <div className="absolute right-0 top-12 h-[36rem] w-[28rem] bg-[radial-gradient(circle,rgba(47,138,85,0.14),transparent_68%)]" />
+        <motion.div
+          style={{ opacity: glowOpacity }}
+          className="absolute -left-48 -top-64 h-[58rem] w-[28rem] -rotate-45 rounded-full bg-[radial-gradient(circle,rgba(154,116,40,0.15),transparent_68%)]"
+        />
+        <motion.div
+          style={{ opacity: glowOpacity }}
+          className="absolute right-0 top-12 h-[36rem] w-[28rem] bg-[radial-gradient(circle,rgba(47,138,85,0.13),transparent_68%)]"
+        />
       </div>
 
-      <div className="relative mx-auto max-w-7xl px-4 pb-12 pt-12 text-center md:px-8 md:pb-20 md:pt-20">
-        <div className="relative z-10 mx-auto max-w-4xl">
+      <div className="relative mx-auto max-w-7xl px-4 pb-10 pt-10 text-center md:px-8 md:pb-16 md:pt-16">
+        <motion.div
+          className="relative z-10 mx-auto max-w-4xl"
+          initial={shouldReduceMotion ? false : { opacity: 0, y: 18 }}
+          animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+          transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+        >
           <span className="inline-flex items-center gap-2 rounded-lg border border-volt/30 bg-volt/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#d8cba9]">
             <Radar className="h-4 w-4 text-volt" />
             Parts discovery + fitment intelligence
@@ -39,7 +59,7 @@ export function HeroSection() {
             Build the car you want.
             <span className="block text-[#d7c28b]">Know what fits first.</span>
           </h1>
-          <p className="mx-auto my-7 max-w-2xl text-base leading-8 text-[#b8ac91] md:text-xl">
+          <p className="mx-auto my-6 max-w-2xl text-base leading-8 text-[#b8ac91] md:text-xl">
             Search real aftermarket sources, understand compatibility risk, and plan every upgrade around your exact vehicle.
           </p>
           <div className="flex flex-col justify-center gap-3 sm:flex-row">
@@ -53,12 +73,15 @@ export function HeroSection() {
               <Link href="#twin">Open Build Twin</Link>
             </Button>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="mx-auto mt-16 max-w-7xl [mask-image:linear-gradient(to_bottom,black_72%,transparent_100%)]">
+        <motion.div
+          style={{ y: dashboardY, scale: dashboardScale }}
+          className="mx-auto mt-12 max-w-7xl [mask-image:linear-gradient(to_bottom,black_76%,transparent_100%)] md:mt-14"
+        >
           <div className="[perspective:1200px] md:px-10">
-            <div className="[transform:rotateX(15deg)]">
-              <div className="relative mx-auto min-h-[30rem] max-w-6xl overflow-hidden rounded-lg border border-volt/35 bg-[#09160e] shadow-[0_38px_120px_rgba(0,0,0,0.6),0_0_70px_rgba(154,116,40,0.12)] md:min-h-[42rem]">
+            <div className="[transform:rotateX(10deg)]">
+              <div className="relative mx-auto min-h-[27rem] max-w-6xl overflow-hidden rounded-lg border border-volt/30 bg-[#09160e] shadow-[0_30px_90px_rgba(0,0,0,0.54),0_0_52px_rgba(154,116,40,0.1)] md:min-h-[38rem]">
                 <Image
                   src="https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&w=1800&q=85"
                   alt="Performance car used for a FitmentAI build preview"
@@ -79,7 +102,12 @@ export function HeroSection() {
                   </span>
                 </div>
 
-                <div className="absolute bottom-8 left-4 right-4 text-left md:bottom-12 md:left-8 md:right-auto md:w-[58%]">
+                <motion.div
+                  className="absolute bottom-7 left-4 right-4 text-left md:bottom-10 md:left-8 md:right-auto md:w-[56%]"
+                  initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
+                  animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+                  transition={{ delay: 0.25, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                >
                   <div className="rounded-lg border border-line bg-[#07120c]/90 p-4 backdrop-blur-md md:p-6">
                     <div className="flex items-start justify-between gap-4">
                       <div>
@@ -98,15 +126,22 @@ export function HeroSection() {
                       <DashboardSignal icon={Car} label="Build" value="OEM+ Daily" />
                     </div>
                   </div>
-                </div>
+                </motion.div>
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="relative z-10 mx-auto -mt-4 grid max-w-4xl gap-3 sm:grid-cols-3 md:-mt-12">
-          {proofSignals.map((signal) => (
-            <div key={signal.label} className="flex items-center gap-3 rounded-lg border border-line bg-panel/95 p-4 text-left shadow-glow">
+        <div className="relative z-10 mx-auto -mt-3 grid max-w-4xl gap-3 sm:grid-cols-3 md:-mt-10">
+          {proofSignals.map((signal, index) => (
+            <motion.div
+              key={signal.label}
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 18 }}
+              whileInView={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.5 }}
+              transition={{ delay: index * 0.08, duration: 0.55 }}
+              className="flex items-center gap-3 rounded-lg border border-line bg-panel/95 p-4 text-left shadow-glow"
+            >
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-volt/25 bg-volt/10 text-volt">
                 <signal.icon className="h-4 w-4" />
               </span>
@@ -114,7 +149,7 @@ export function HeroSection() {
                 <span className="block text-xs text-[#9e9278]">{signal.label}</span>
                 <span className="mt-1 block text-sm font-semibold text-[#f3ead5]">{signal.value}</span>
               </span>
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>

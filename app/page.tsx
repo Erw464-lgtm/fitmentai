@@ -25,6 +25,7 @@ import { VerifiedSetups } from "@/components/VerifiedSetups";
 import { WaitlistForm } from "@/components/WaitlistForm";
 import { Footer } from "@/components/ui/footer-section";
 import { HeroSection } from "@/components/ui/hero-section-9";
+import { ScrollReveal } from "@/components/ui/scroll-reveal";
 
 const problems = [
   "Aftermarket parts are scattered across manufacturer sites, parts stores, forums, screenshots, listings, and guesswork.",
@@ -126,30 +127,35 @@ export default function Home() {
 
             <section className="relative mx-auto grid max-w-7xl gap-8 px-4 py-12 md:px-8 lg:grid-cols-[0.9fr_1.1fr]">
               <div className="absolute inset-x-5 top-0 -z-10 h-[420px] rounded-[40px] bg-[radial-gradient(circle_at_20%_30%,rgba(47,138,85,0.15),transparent_36%),radial-gradient(circle_at_80%_55%,rgba(154,116,40,0.12),transparent_36%)] blur-2xl" />
-              <SectionCard eyebrow="Problems solved" title="Find the right part before purchase">
-                <ul className="space-y-4">
-                  {problems.map((problem) => (
-                    <li key={problem} className="flex gap-3">
-                      <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-volt" />
-                      <span>{problem}</span>
-                    </li>
-                  ))}
-                </ul>
-              </SectionCard>
+              <ScrollReveal>
+                <SectionCard eyebrow="Problems solved" title="Find the right part before purchase">
+                  <ul className="space-y-4">
+                    {problems.map((problem) => (
+                      <li key={problem} className="flex gap-3">
+                        <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-volt" />
+                        <span>{problem}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </SectionCard>
+              </ScrollReveal>
               <div className="grid gap-4 sm:grid-cols-2">
-                {audiences.map((audience) => (
-                  <div key={audience.label} className="rounded-lg border border-line bg-panel/95 p-5 shadow-sm">
+                {audiences.map((audience, index) => (
+                  <ScrollReveal key={audience.label} delay={index * 0.06} y={22}>
+                    <div className="rounded-lg border border-line bg-panel/95 p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-volt/70 hover:shadow-volt">
                     <audience.icon className="h-5 w-5 text-volt" />
                     <h3 className="mt-4 text-lg font-semibold text-[#f3ead5]">{audience.label}</h3>
                     <p className="mt-2 text-sm leading-6 text-[#b8ac91]">{audience.copy}</p>
-                  </div>
+                    </div>
+                  </ScrollReveal>
                 ))}
               </div>
             </section>
 
             <section className="relative mx-auto max-w-7xl px-4 py-12 md:px-8">
               <div className="absolute inset-x-5 top-0 -z-10 h-[360px] rounded-[40px] bg-[radial-gradient(circle_at_26%_30%,rgba(154,116,40,0.15),transparent_34%),radial-gradient(circle_at_78%_62%,rgba(47,138,85,0.14),transparent_34%)] blur-2xl" />
-              <div className="rounded-lg border border-line bg-panel/95 p-5 shadow-glow md:p-7">
+              <ScrollReveal>
+                <div className="rounded-lg border border-line bg-panel/95 p-5 shadow-glow md:p-7">
                 <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-volt">How to demo</p>
@@ -164,14 +170,17 @@ export default function Home() {
                 </div>
                 <div className="mt-6 grid gap-3 md:grid-cols-4">
                   {demoSteps.map((step, index) => (
-                    <a key={step.title} href={index === 0 ? "#garage" : index === 1 || index === 2 ? "#demo" : "#ask"} className="rounded-lg border border-line bg-[#09160e] p-4 transition hover:border-volt hover:bg-volt/5">
-                      <span className="text-xs font-semibold uppercase tracking-[0.16em] text-volt">0{index + 1}</span>
-                      <h3 className="mt-3 font-semibold text-[#f3ead5]">{step.title}</h3>
-                      <p className="mt-2 text-sm leading-6 text-[#b8ac91]">{step.copy}</p>
-                    </a>
+                    <ScrollReveal key={step.title} delay={index * 0.07} y={18}>
+                      <a href={index === 0 ? "#garage" : index === 1 || index === 2 ? "#demo" : "#ask"} className="block rounded-lg border border-line bg-[#09160e] p-4 transition duration-300 hover:-translate-y-1 hover:border-volt hover:bg-volt/5">
+                        <span className="text-xs font-semibold uppercase tracking-[0.16em] text-volt">0{index + 1}</span>
+                        <h3 className="mt-3 font-semibold text-[#f3ead5]">{step.title}</h3>
+                        <p className="mt-2 text-sm leading-6 text-[#b8ac91]">{step.copy}</p>
+                      </a>
+                    </ScrollReveal>
                   ))}
                 </div>
               </div>
+              </ScrollReveal>
             </section>
           </>
         }
