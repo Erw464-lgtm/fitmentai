@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import { motion, useReducedMotion, useScroll, useSpring, useTransform } from "framer-motion";
 import {
   ArrowRight,
   BadgeCheck,
@@ -26,10 +26,14 @@ const proofSignals = [
 export function HeroSection() {
   const heroRef = useRef<HTMLElement>(null);
   const shouldReduceMotion = useReducedMotion();
-  const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
-  const dashboardY = useTransform(scrollYProgress, [0, 1], [0, shouldReduceMotion ? 0 : 80]);
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end 35%"] });
+  const smoothProgress = useSpring(scrollYProgress, { stiffness: 120, damping: 24, mass: 0.25 });
+  const dashboardY = useTransform(smoothProgress, [0, 1], [0, shouldReduceMotion ? 0 : 92]);
   const dashboardScale = useTransform(scrollYProgress, [0, 1], [1, shouldReduceMotion ? 1 : 0.96]);
   const glowOpacity = useTransform(scrollYProgress, [0, 0.65], [1, shouldReduceMotion ? 1 : 0.35]);
+  const profileX = useTransform(smoothProgress, [0, 0.5, 1], [shouldReduceMotion ? 0 : -18, 0, shouldReduceMotion ? 0 : 22]);
+  const scanX = useTransform(smoothProgress, [0, 1], [shouldReduceMotion ? "0%" : "-120%", shouldReduceMotion ? "0%" : "120%"]);
+  const scoreScale = useTransform(smoothProgress, [0, 0.45, 1], [1, shouldReduceMotion ? 1 : 1.08, 1]);
 
   return (
     <section id="home" ref={heroRef} className="relative overflow-hidden border-b border-line bg-[#07120c]">
@@ -92,11 +96,25 @@ export function HeroSection() {
                 />
                 <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(7,18,12,0.98)_0%,rgba(7,18,12,0.72)_52%,rgba(7,18,12,0.2)_100%),linear-gradient(0deg,rgba(7,18,12,0.95),transparent_56%)]" />
 
+                <motion.div
+                  aria-hidden
+                  style={{ scaleX: smoothProgress }}
+                  className="absolute inset-x-0 top-0 h-1 origin-left bg-gradient-to-r from-signal via-volt to-signal"
+                />
+                <motion.div
+                  aria-hidden
+                  style={{ x: scanX }}
+                  className="absolute top-0 h-full w-1/3 bg-[linear-gradient(90deg,transparent,rgba(154,116,40,0.16),transparent)]"
+                />
+
                 <div className="absolute inset-x-4 top-4 flex items-center justify-between gap-3 md:inset-x-7 md:top-7">
-                  <span className="inline-flex items-center gap-2 rounded-md border border-signal/40 bg-[#07120c]/85 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#a9d9b8] backdrop-blur md:text-xs">
+                  <motion.span
+                    style={{ x: profileX }}
+                    className="inline-flex items-center gap-2 rounded-md border border-signal/40 bg-[#07120c]/85 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#a9d9b8] shadow-[0_0_26px_rgba(47,138,85,0.16)] backdrop-blur md:text-xs"
+                  >
                     <BadgeCheck className="h-4 w-4" />
                     Vehicle profile active
-                  </span>
+                  </motion.span>
                   <span className="rounded-md border border-line bg-[#07120c]/85 px-3 py-2 text-[10px] font-semibold text-[#d8cba9] backdrop-blur md:text-xs">
                     2017 Porsche Macan Turbo
                   </span>
@@ -115,10 +133,13 @@ export function HeroSection() {
                         <h2 className="mt-2 text-xl font-semibold text-[#f3ead5] md:text-3xl">Carbon rear spoiler</h2>
                         <p className="mt-2 text-xs leading-5 text-[#b8ac91] md:text-sm">Source evidence, body-panel tolerance, and install risk analyzed together.</p>
                       </div>
-                      <div className="shrink-0 rounded-lg border border-signal/45 bg-signal/15 px-3 py-2 text-center">
+                      <motion.div
+                        style={{ scale: scoreScale }}
+                        className="shrink-0 rounded-lg border border-signal/45 bg-signal/15 px-3 py-2 text-center shadow-[0_0_24px_rgba(47,138,85,0.18)]"
+                      >
                         <p className="text-[9px] uppercase tracking-[0.12em] text-[#a9d9b8] md:text-[10px]">Score</p>
                         <p className="text-2xl font-bold text-[#c9e7d1] md:text-4xl">86</p>
-                      </div>
+                      </motion.div>
                     </div>
                     <div className="mt-5 grid grid-cols-3 gap-2">
                       <DashboardSignal icon={Search} label="Source" value="Manufacturer" />
