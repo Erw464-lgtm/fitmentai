@@ -25,15 +25,23 @@ const proofSignals = [
 
 export function HeroSection() {
   const heroRef = useRef<HTMLElement>(null);
+  const dashboardRef = useRef<HTMLDivElement>(null);
   const shouldReduceMotion = useReducedMotion();
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end 35%"] });
-  const smoothProgress = useSpring(scrollYProgress, { stiffness: 120, damping: 24, mass: 0.25 });
-  const dashboardY = useTransform(smoothProgress, [0, 1], [0, shouldReduceMotion ? 0 : 92]);
+  const { scrollYProgress: dashboardProgress } = useScroll({
+    target: dashboardRef,
+    offset: ["start 86%", "end 18%"],
+  });
+  const smoothDashboardProgress = useSpring(dashboardProgress, { stiffness: 120, damping: 24, mass: 0.25 });
+  const dashboardY = useTransform(smoothDashboardProgress, [0, 1], [shouldReduceMotion ? 0 : -24, shouldReduceMotion ? 0 : 54]);
   const dashboardScale = useTransform(scrollYProgress, [0, 1], [1, shouldReduceMotion ? 1 : 0.96]);
   const glowOpacity = useTransform(scrollYProgress, [0, 0.65], [1, shouldReduceMotion ? 1 : 0.35]);
-  const profileX = useTransform(smoothProgress, [0, 0.5, 1], [shouldReduceMotion ? 0 : -18, 0, shouldReduceMotion ? 0 : 22]);
-  const scanX = useTransform(smoothProgress, [0, 1], [shouldReduceMotion ? "0%" : "-120%", shouldReduceMotion ? "0%" : "120%"]);
-  const scoreScale = useTransform(smoothProgress, [0, 0.45, 1], [1, shouldReduceMotion ? 1 : 1.08, 1]);
+  const dashboardRotate = useTransform(smoothDashboardProgress, [0, 1], [shouldReduceMotion ? 0 : 16, shouldReduceMotion ? 0 : 2]);
+  const imageScale = useTransform(smoothDashboardProgress, [0, 1], [shouldReduceMotion ? 1 : 1.1, 1]);
+  const imageY = useTransform(smoothDashboardProgress, [0, 1], [shouldReduceMotion ? 0 : -22, shouldReduceMotion ? 0 : 18]);
+  const profileX = useTransform(smoothDashboardProgress, [0, 0.5, 1], [shouldReduceMotion ? 0 : -34, 0, shouldReduceMotion ? 0 : 34]);
+  const scanX = useTransform(smoothDashboardProgress, [0, 1], [shouldReduceMotion ? "0%" : "-130%", shouldReduceMotion ? "0%" : "130%"]);
+  const scoreScale = useTransform(smoothDashboardProgress, [0, 0.45, 1], [1, shouldReduceMotion ? 1 : 1.12, 1]);
 
   return (
     <section id="home" ref={heroRef} className="relative overflow-hidden border-b border-line bg-[#07120c]">
@@ -83,22 +91,24 @@ export function HeroSection() {
           style={{ y: dashboardY, scale: dashboardScale }}
           className="mx-auto mt-12 max-w-7xl [mask-image:linear-gradient(to_bottom,black_76%,transparent_100%)] md:mt-14"
         >
-          <div className="[perspective:1200px] md:px-10">
-            <div className="[transform:rotateX(10deg)]">
+          <div ref={dashboardRef} className="[perspective:1200px] md:px-10">
+            <motion.div style={{ rotateX: dashboardRotate, transformStyle: "preserve-3d" }}>
               <div className="relative mx-auto min-h-[27rem] max-w-6xl overflow-hidden rounded-lg border border-volt/30 bg-[#09160e] shadow-[0_30px_90px_rgba(0,0,0,0.54),0_0_52px_rgba(154,116,40,0.1)] md:min-h-[38rem]">
-                <Image
-                  src="https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&w=1800&q=85"
-                  alt="Performance car used for a FitmentAI build preview"
-                  fill
-                  sizes="(max-width: 768px) 100vw, 1200px"
-                  className="object-cover"
-                  priority
-                />
+                <motion.div style={{ scale: imageScale, y: imageY }} className="absolute inset-0">
+                  <Image
+                    src="https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&w=1800&q=85"
+                    alt="Performance car used for a FitmentAI build preview"
+                    fill
+                    sizes="(max-width: 768px) 100vw, 1200px"
+                    className="object-cover"
+                    priority
+                  />
+                </motion.div>
                 <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(7,18,12,0.98)_0%,rgba(7,18,12,0.72)_52%,rgba(7,18,12,0.2)_100%),linear-gradient(0deg,rgba(7,18,12,0.95),transparent_56%)]" />
 
                 <motion.div
                   aria-hidden
-                  style={{ scaleX: smoothProgress }}
+                  style={{ scaleX: smoothDashboardProgress }}
                   className="absolute inset-x-0 top-0 h-1 origin-left bg-gradient-to-r from-signal via-volt to-signal"
                 />
                 <motion.div
@@ -149,7 +159,7 @@ export function HeroSection() {
                   </div>
                 </motion.div>
               </div>
-            </div>
+            </motion.div>
           </div>
         </motion.div>
 
