@@ -351,6 +351,9 @@ export function FitmentChecker() {
     () => garageVehicles.find((vehicle) => vehicle.id === targetVehicleId) ?? garageVehicles[0],
     [garageVehicles, targetVehicleId]
   );
+  const vehicleSummary = [form.year, form.make, form.model, form.trim].filter(Boolean).join(" ");
+  const categorySummary = partCategoryOptions.find((option) => option.value === form.partCategory)?.label || form.partCategory;
+  const currentSearch = `${vehicleSummary} ${form.partType}`;
 
   const scoreTone = useMemo(() => {
     if (!result) {
@@ -596,7 +599,7 @@ export function FitmentChecker() {
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+    <div className="grid gap-6 lg:grid-cols-[1.02fr_0.98fr]">
       <form
         onSubmit={handleSubmit}
         className="rounded-lg border border-line bg-panel/95 p-4 shadow-glow md:p-6"
@@ -607,10 +610,13 @@ export function FitmentChecker() {
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-signal">
                 Find parts
               </p>
-              <h2 className="mt-2 text-2xl font-semibold text-[#f3ead5]">Parts + Fitment</h2>
+              <h2 className="mt-2 text-2xl font-semibold text-[#f3ead5]">Find a part, then check if it fits.</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-[#9e9278]">
+                Start with the car, choose what you are shopping for, pick a listing, then run a fitment score before saving it to your build.
+              </p>
             </div>
-            <div className="rounded-md border border-line bg-[#111f15] px-3 py-1 text-xs font-medium text-[#b8ac91]">
-              Preview search
+            <div className="rounded-md border border-line bg-[#111f15] px-3 py-1 text-xs font-medium text-[#b8ac91] whitespace-nowrap">
+              Guided search
             </div>
           </div>
           <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -647,8 +653,8 @@ export function FitmentChecker() {
 
         <div className="mb-4 flex items-center justify-between gap-4 border-b border-line pb-4">
           <div>
-            <p className="text-sm font-semibold text-[#f3ead5]">Build profile</p>
-            <p className="mt-1 text-xs text-[#9e9278]">Start with the vehicle, then search for a target part.</p>
+            <p className="text-sm font-semibold text-[#f3ead5]">1. Vehicle + part target</p>
+            <p className="mt-1 text-xs text-[#9e9278]">These choices automatically shape the listings and fitment score.</p>
           </div>
         </div>
 
@@ -692,18 +698,36 @@ export function FitmentChecker() {
         </div>
 
         <label className="mt-4 grid gap-2 text-sm font-medium text-[#b8ac91]">
-          Specific part or specs <span className="text-xs font-normal text-[#72684f]">(optional search detail)</span>
+          2. What part are you looking at? <span className="text-xs font-normal text-[#72684f]">(optional but helpful)</span>
           <textarea
             value={form.specificPart}
             onChange={(event) => updateField("specificPart", event.target.value)}
             rows={3}
             className="rounded-lg border border-line bg-[#09160e] px-4 py-3 text-[#f3ead5] outline-none ring-volt/20 transition placeholder:text-[#72684f] focus:border-volt focus:ring-4"
-            placeholder="Optional: brand, part number, SKU, material, dimensions, or exact listing text if you want FitmentAI to use it in the check."
+            placeholder="Example: Rennline intake, AA Carbon spoiler, exact listing title, part number, material, dimensions, or seller claim."
           />
           <span className="text-xs font-normal leading-5 text-[#72684f]">
-            Leave this blank if you only want to check the category and vehicle setup.
+            Leave it blank to browse example listings for this category.
           </span>
         </label>
+
+        <div className="mt-5 rounded-lg border border-volt/20 bg-volt/5 p-4">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-volt">Current search</p>
+              <p className="mt-2 text-lg font-semibold text-[#f3ead5]">{currentSearch}</p>
+              <p className="mt-1 text-sm text-[#9e9278]">{categorySummary} for {vehicleSummary}</p>
+            </div>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-volt px-4 text-sm font-semibold text-[#07120c] transition hover:bg-[#b98d31] disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Gauge className="h-4 w-4" />}
+              Quick score
+            </button>
+          </div>
+        </div>
 
         <div className="mt-5 rounded-lg border border-line bg-[#0a180f] p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -711,11 +735,11 @@ export function FitmentChecker() {
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-volt">Step 3 - Find a part</p>
               <h3 className="mt-2 text-lg font-semibold text-[#f3ead5]">Possible listings from different websites</h3>
               <p className="mt-2 text-sm leading-6 text-[#9e9278]">
-                Example listings today. Live manufacturer and parts-site search is next.
+                Pick one listing to view details, run a fitment check, or save it to My Garage.
               </p>
             </div>
             <span className="rounded-md border border-line bg-[#111f15] px-3 py-1 text-xs text-[#9e9278]">
-              Preview catalog
+              {mockParts.length} results
             </span>
           </div>
 
@@ -745,20 +769,26 @@ export function FitmentChecker() {
                   setSelectedPart(part);
                   setListingMessage("");
                 }}
-                className="rounded-lg border border-line bg-[#07120c] p-4 text-left transition hover:border-volt/70 hover:bg-volt/5"
+                className="rounded-lg border border-line bg-[#07120c] p-4 text-left transition hover:-translate-y-0.5 hover:border-volt/70 hover:bg-volt/5"
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-semibold text-[#f3ead5]">{part.name}</p>
-                    <p className="mt-1 text-xs text-[#9e9278]">
-                      {part.source} - {part.price} - {part.eta}
-                    </p>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-md border border-line bg-[#09160e] px-2 py-1 text-[11px] font-semibold text-[#d8cba9]">
+                        {part.source}
+                      </span>
+                      <span className="text-xs text-[#9e9278]">{part.price}</span>
+                      <span className="text-xs text-[#72684f]">{part.eta}</span>
+                    </div>
+                    <p className="mt-3 font-semibold text-[#f3ead5]">{part.name}</p>
+                    <p className="mt-2 text-xs leading-5 text-[#9e9278]">{part.specs}</p>
                   </div>
-                  <span className={`rounded-md px-2 py-1 text-xs font-bold ${riskClass(part.risk)}`}>
+                  <span className={`w-fit shrink-0 rounded-md px-2 py-1 text-xs font-bold ${riskClass(part.risk)}`}>
                     {part.risk} risk
                   </span>
                 </div>
                 <p className="mt-3 text-sm leading-6 text-[#b8ac91]">{part.fitmentNote}</p>
+                <span className="mt-3 inline-flex text-xs font-semibold text-volt">View listing actions</span>
               </button>
             ))}
           </div>
@@ -869,11 +899,11 @@ export function FitmentChecker() {
         </button>
       </form>
 
-      <div className="rounded-lg border border-line bg-[#07120c] p-5 text-white shadow-volt md:p-7">
+      <div className="rounded-lg border border-line bg-[#07120c] p-5 text-white shadow-volt md:p-7 lg:sticky lg:top-24 lg:self-start">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-sm font-medium text-volt">
             <Sparkles className="h-4 w-4" />
-            Fitment score
+            Fitment verdict
           </div>
           <span className="rounded-md border border-volt/20 bg-volt/10 px-3 py-1 text-xs text-[#d8cba9]">
             0-100 compatibility
@@ -919,17 +949,35 @@ export function FitmentChecker() {
         ) : (
           <div className="mt-8">
             <div className="rounded-lg border border-dashed border-volt/30 bg-volt/5 p-6 text-[#b8ac91]">
-              <p className="text-3xl font-semibold text-white">Ready for a part.</p>
+              <p className="text-3xl font-semibold text-white">Ready when you pick a listing.</p>
               <p className="mt-4 leading-7">
-                Choose a vehicle and aftermarket part listing to get a believable
-                compatibility score before purchase.
+                Find a part on the left, open its listing actions, then run a fitment check to see compatibility warnings before buying.
               </p>
             </div>
+            <div className="mt-4 rounded-lg border border-line bg-[#09160e] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-volt">Current setup</p>
+              <div className="mt-3 grid gap-3 text-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-[#9e9278]">Vehicle</span>
+                  <span className="text-right font-semibold text-[#f3ead5]">{vehicleSummary}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-[#9e9278]">Part target</span>
+                  <span className="text-right font-semibold text-[#f3ead5]">{form.partType}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-[#9e9278]">Suspension</span>
+                  <span className="text-right font-semibold text-[#f3ead5]">
+                    {suspensionOptions.find((option) => option.value === form.suspensionSetup)?.label || form.suspensionSetup}
+                  </span>
+                </div>
+              </div>
+            </div>
             <div className="mt-4 grid gap-3">
-              {["Vehicle match", "Fitment warnings", "Before-buying checks"].map((item) => (
+              {["Pick a listing", "Run fitment check", "Save to My Garage"].map((item, index) => (
                 <div key={item} className="flex items-center justify-between rounded-lg border border-volt/15 bg-volt/5 p-3 text-sm">
                   <span className="text-[#b8ac91]">{item}</span>
-                  <span className="text-[#72684f]">pending</span>
+                  <span className="text-[#72684f]">0{index + 1}</span>
                 </div>
               ))}
             </div>
