@@ -26,6 +26,7 @@ import { WaitlistForm } from "@/components/WaitlistForm";
 import { Footer } from "@/components/ui/footer-section";
 import { HeroSection } from "@/components/ui/hero-section-9";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
+import { Component as BuildPriorityTuner } from "@/components/ui/dadadadddddd";
 
 const problems = [
   "Aftermarket parts are scattered across manufacturer sites, parts stores, forums, screenshots, listings, and guesswork.",
@@ -179,6 +180,9 @@ export default function Home() {
                     </ScrollReveal>
                   ))}
                 </div>
+                <ScrollReveal className="mt-5" delay={0.2} y={18}>
+                  <BuildPriorityTuner />
+                </ScrollReveal>
               </div>
               </ScrollReveal>
             </section>
