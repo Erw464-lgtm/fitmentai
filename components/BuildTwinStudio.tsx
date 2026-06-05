@@ -392,6 +392,9 @@ export function BuildTwinStudio() {
               <ClipboardCopy className="h-4 w-4" />
               Copy Passport
             </button>
+            <p className="rounded-lg border border-line bg-[#07120c] p-3 text-xs leading-5 text-[#9e9278] sm:col-span-2">
+              A Build Passport is a shareable snapshot of your vehicle, build direction, fitment score, saved parts, risks, and evidence so a shop, seller, or friend can quickly understand the plan.
+            </p>
             <button type="button" onClick={sendToAskFitmentAI} className="inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-line bg-[#09160e] px-5 font-semibold text-[#d8cba9] transition hover:border-volt hover:text-volt sm:col-span-2">
               <MessageCircle className="h-4 w-4" />
               Ask FitmentAI to plan this build
