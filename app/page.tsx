@@ -68,8 +68,6 @@ const desktopNavItems = [
   { name: "Build Twin", href: "#twin" },
   { name: "Find Parts", href: "#demo" },
   { name: "Garage", href: "#garage" },
-  { name: "Database", href: "#database" },
-  { name: "Verified", href: "#verified" },
   { name: "Ask AI", href: "#ask" },
   { name: "Waitlist", href: "#waitlist" },
 ];
@@ -90,10 +88,10 @@ export default function Home() {
             </span>
           </a>
           <div className="flex items-center gap-3">
-            <nav className="hidden xl:block">
+            <nav className="hidden lg:block">
               <NavHeader items={desktopNavItems} />
             </nav>
-            <nav className="hidden items-center gap-4 text-sm font-medium text-[#b8ac91] md:flex xl:hidden">
+            <nav className="hidden items-center gap-4 text-sm font-medium text-[#b8ac91] md:flex lg:hidden">
               <a className="transition hover:text-volt" href="#home">Home</a>
               <a className="transition hover:text-volt" href="#twin">Build Twin</a>
               <a className="transition hover:text-volt" href="#demo">Find Parts</a>
