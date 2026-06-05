@@ -25,6 +25,7 @@ import { VerifiedSetups } from "@/components/VerifiedSetups";
 import { WaitlistForm } from "@/components/WaitlistForm";
 import { Footer } from "@/components/ui/footer-section";
 import { HeroSection } from "@/components/ui/hero-section-9";
+import NavHeader from "@/components/ui/nav-header";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { Component as BuildPriorityTuner } from "@/components/ui/dadadadddddd";
 
@@ -62,6 +63,17 @@ const demoSteps = [
   { title: "Ask FitmentAI", copy: "Use AI to compare risk, supporting mods, and next build steps." },
 ];
 
+const desktopNavItems = [
+  { name: "Home", href: "#home" },
+  { name: "Build Twin", href: "#twin" },
+  { name: "Find Parts", href: "#demo" },
+  { name: "Garage", href: "#garage" },
+  { name: "Database", href: "#database" },
+  { name: "Verified", href: "#verified" },
+  { name: "Ask AI", href: "#ask" },
+  { name: "Waitlist", href: "#waitlist" },
+];
+
 export default function Home() {
   return (
     <main className="min-h-screen overflow-hidden bg-ink text-[#f3ead5]">
@@ -78,18 +90,16 @@ export default function Home() {
             </span>
           </a>
           <div className="flex items-center gap-3">
-            <nav className="hidden items-center gap-4 text-sm font-medium text-[#b8ac91] md:flex">
+            <nav className="hidden xl:block">
+              <NavHeader items={desktopNavItems} />
+            </nav>
+            <nav className="hidden items-center gap-4 text-sm font-medium text-[#b8ac91] md:flex xl:hidden">
               <a className="transition hover:text-volt" href="#home">Home</a>
               <a className="transition hover:text-volt" href="#twin">Build Twin</a>
               <a className="transition hover:text-volt" href="#demo">Find Parts</a>
-              <a className="transition hover:text-volt" href="#garage">My Garage</a>
-              <a className="transition hover:text-volt" href="#database">Database</a>
-              <a className="transition hover:text-volt" href="#verified">Verified</a>
-              <a className="transition hover:text-volt" href="#ask">Ask FitmentAI</a>
-              <a className="transition hover:text-volt" href="#how">Roadmap</a>
+              <a className="transition hover:text-volt" href="#garage">Garage</a>
+              <a className="transition hover:text-volt" href="#ask">Ask AI</a>
               <a className="transition hover:text-volt" href="#waitlist">Waitlist</a>
-              <a className="transition hover:text-volt" href="#admin">Admin</a>
-              <a className="transition hover:text-volt" href="#contact">Contact</a>
             </nav>
             <AccountMenu />
           </div>
