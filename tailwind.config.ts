@@ -20,8 +20,8 @@ const config: Config = {
         warning: "#8f5f1e",
       },
       boxShadow: {
-        glow: "0 24px 80px rgba(0, 0, 0, 0.38)",
-        volt: "0 20px 70px rgba(154, 116, 40, 0.18)",
+        glow: "0 18px 46px rgba(0, 0, 0, 0.28)",
+        volt: "0 16px 44px rgba(0, 0, 0, 0.26)",
       },
     },
   },
